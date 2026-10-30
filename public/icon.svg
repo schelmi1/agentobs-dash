@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="60" viewBox="0 0 96 60">
+  <title>agentobs mark</title>
+  <style>
+    :root { color: #101820; }
+    @media (prefers-color-scheme: dark) { :root { color: #f4f7fa; } }
+  </style>
+  <defs>
+    <!-- Shared by the header and favicon. All unpainted space stays transparent. -->
+    <g id="agentobs-mark">
+      <defs>
+        <mask id="agentobs-hub-clear" maskUnits="userSpaceOnUse" x="0" y="0" width="96" height="60">
+          <rect width="96" height="60" fill="#ffffff"/>
+          <circle cx="51" cy="30" r="8" fill="#000000"/>
+        </mask>
+      </defs>
+      <g mask="url(#agentobs-hub-clear)" fill="currentColor">
+        <path fill-rule="evenodd" d="M2 54 30 6H41L59 54H47L43 42H21L14 54ZM27 32H39L34 18Z"/>
+        <circle cx="68" cy="30" r="23.5" fill="none" stroke="currentColor" stroke-width="7"/>
+      </g>
+      <g fill="#3288ee" stroke="#3288ee">
+        <path d="M51 30 72 18M51 30 72 42" fill="none" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="51" cy="30" r="5.5" stroke="none"/>
+        <circle cx="72" cy="18" r="5.5" stroke="none"/>
+        <circle cx="72" cy="42" r="5.5" stroke="none"/>
+      </g>
+    </g>
+  </defs>
+  <use href="#agentobs-mark"/>
+</svg>

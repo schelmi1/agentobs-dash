@@ -1,0 +1,50 @@
+/* Theme owns visual treatment: corners, typography, card density and decoration. */
+:root { --panel-radius: 8px; --control-radius: 6px; --chip-radius: 999px; }
+:root[data-dashboard-theme='chamfered'] { --panel-radius: 0px; --control-radius: 0px; --chip-radius: 0px; }
+:root[data-dashboard-theme] :is(.agent, .metric, .inspector, .workspace-menu, .theme-menu, .empty, .token-stats > div) { border-radius: var(--panel-radius); }
+:root[data-dashboard-theme] :is(.toolbar-button, input, select, .workspace-trigger, .workspace-button, .theme-option) { border-radius: var(--control-radius); }
+:root[data-dashboard-theme] :is(.status, .tool-badge, .thinking-pill, .summary-pill, .connection) { border-radius: var(--chip-radius); }
+:root[data-dashboard-theme='chamfered'] :is(.agent, .metric, .workspace-trigger, .workspace-button, .toolbar-button, .status, .tool-badge, .thinking-pill, .summary-pill, .connection) {
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+}
+:root[data-dashboard-theme='chamfered'] :is(.local-dot, .connection::before, .metric-dot, .status::before, .summary-pill::before) { border-radius: 0; }
+:root[data-dashboard-theme='chamfered'] :is(.status, .summary-pill, .tool-badge, .thinking-pill) { font-weight: 650; }
+:root[data-dashboard-theme='chamfered'] :is(.status, .summary-pill) { border-color: transparent; }
+:root[data-dashboard-theme='chamfered'] :is(.status, .summary-pill)::before { display: none; }
+:root[data-dashboard-theme='chamfered'] :is(.status, .summary-pill):is(.status-working, .status-tool) { background: var(--green); color: var(--green-ink); }
+:root[data-dashboard-theme='chamfered'] :is(.status, .summary-pill):is(.status-input, .status-starting) { background: var(--amber); color: var(--amber-ink); }
+:root[data-dashboard-theme='chamfered'] :is(.status, .summary-pill):is(.status-failed, .status-interrupted) { background: var(--red); color: var(--red-ink); }
+:root[data-dashboard-theme='chamfered'] :is(.status, .summary-pill):is(.status-quiet, .status-unknown, .status-completed, .status-inactive) { background: var(--muted); color: var(--muted-ink); }
+:root[data-dashboard-theme='chamfered'] .tool-badge.is-current { background: color-mix(in srgb, currentColor 6%, transparent); border-color: currentColor; }
+:root[data-dashboard-theme='chamfered'] .thinking-pill { background: var(--green); color: var(--green-ink); border-color: transparent; }
+:root :is(.agent-working, .agent-tool), :root :is(.agent-working, .agent-tool):hover { border-left: 3px solid var(--green); }
+:root :is(.agent-input, .agent-starting), :root :is(.agent-input, .agent-starting):hover { border-left: 3px solid var(--amber); }
+:root :is(.agent-failed, .agent-interrupted), :root :is(.agent-failed, .agent-interrupted):hover { border-left: 3px solid var(--red); }
+:root .agent-input { border-color: var(--amber); animation: approval-border-pulse 3.6s ease-in-out infinite; }
+@keyframes approval-border-pulse {
+  0%, 100% { border-color: color-mix(in srgb, var(--amber) 40%, var(--border)); }
+  50% { border-color: var(--amber); }
+}
+
+/* TERMINAL — compact mono type and denser cards within the selected layout. */
+:root[data-dashboard-theme='terminal'] { --vscode-font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; }
+:root[data-dashboard-theme='terminal'] .agent { padding: 11px 14px; border-width: 0 0 1px 3px; }
+:root[data-dashboard-theme='terminal'] .agent-input { border-width: 1px 1px 1px 3px; }
+:root[data-dashboard-theme='terminal'] .agent .task-title { font-size: 14px; }
+:root[data-dashboard-theme='terminal'] .card-identity { margin: 0; gap: 1px 8px; }
+:root[data-dashboard-theme='terminal'] .token-summary { margin-left: 0; }
+:root[data-dashboard-theme='terminal'] .phase { margin-top: 0; font-size: 10px; }
+:root[data-dashboard-theme='terminal'] .agent-id { display: none; }
+:root[data-dashboard-theme='terminal'] :is(.agent-name, .agent-provider, .agent-workspace, .token-summary) { font-size: 11px; }
+:root[data-dashboard-theme='terminal'] :is(.progress, .compatibility-note) { font-size: 12px; }
+:root[data-dashboard-theme='terminal'] .tool-badge { font-size: 11px; }
+:root[data-dashboard-theme='terminal'] .thinking-pill { font-size: 11px; }
+:root[data-dashboard-theme='terminal'] .agent-node + .agent-node { margin-top: 0; }
+:root[data-dashboard-theme='terminal'] .children { padding-top: 0; }
+:root[data-dashboard-theme='terminal'] .branch-toggle { font-size: 10px; padding-block: 5px; }
+:root[data-dashboard-theme='terminal'] .metric { border-style: dashed; }
+:root[data-dashboard-theme='terminal'] .run-history > summary { text-transform: uppercase; font-size: 11px; letter-spacing: 1px; }
+
+/* Interactive surfaces retain visible state inside the chamfered polygon. */
+:root[data-dashboard-theme='chamfered'] :is(button, input, select, summary):focus-visible,
+:root[data-dashboard-theme='chamfered'] .agent.selected { outline: 2px solid var(--dashboard-accent); outline-offset: -4px; }

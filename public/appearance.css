@@ -1,0 +1,37 @@
+/* Shared appearance controls and palette-driven surfaces. */
+.theme-picker { position: relative; z-index: 60; }
+.theme-menu { position: fixed; z-index: 100; width: min(380px, calc(100vw - 36px)); max-height: min(620px, 70vh); overflow: auto; padding: 8px; border: 1px solid var(--border); border-radius: 12px; background: var(--dashboard-sidebar); box-shadow: 0 18px 65px #0007; }
+.theme-menu-heading { padding: 8px 10px 12px; color: var(--muted); font-size: 9px; letter-spacing: 1.8px; }
+.theme-option { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--vscode-foreground); text-align: left; }
+.theme-option:hover, .theme-option:focus-visible { background: var(--dashboard-hover); }
+.theme-option[aria-checked='true'] { background: var(--dashboard-selected); border-color: var(--dashboard-accent); }
+.theme-option-copy { flex: 1; min-width: 0; }
+.theme-option strong { font-size: 12px; font-weight: 600; }
+.theme-option-type { color: var(--dashboard-accent); font-size: 9px; margin-left: 8px; }
+.theme-option small { display: block; color: var(--muted); font-size: 10px; line-height: 1.5; margin-top: 2px; }
+.theme-swatch { width: 38px; height: 34px; flex-shrink: 0; border: 1px solid var(--border); border-radius: 5px; background: var(--dashboard-card); box-shadow: inset 5px 0 var(--dashboard-accent); }
+.swatch-theme.swatch-terminal { background-image: repeating-linear-gradient(0deg, transparent 0 4px, color-mix(in srgb, var(--dashboard-accent) 30%, transparent) 5px 6px); }
+.swatch-theme.swatch-chamfered { clip-path: polygon(0 0, 85% 0, 100% 20%, 100% 100%, 15% 100%, 0 80%); }
+
+/* Shared variable contract makes the shell, history, controls and details agree. */
+:root :is(.brand, .root-folder) { color: var(--vscode-foreground); }
+:root :is(.progress, .section-header h2, .inspector-header .eyebrow) { color: var(--dashboard-muted); }
+:root .green { background: var(--green); }
+:root .amber { background: var(--amber); }
+:root .agent.selected { outline: 2px solid var(--dashboard-accent); outline-offset: 3px; }
+:root .agent-input { border-left: 3px solid var(--amber); }
+:root :is(.agent-failed, .agent-interrupted) { border-left: 3px solid var(--red); }
+:root :is(.agent-working, .agent-tool):hover { border-left-color: var(--green); }
+:root :is(.agent-input, .agent-starting):hover { border-left-color: var(--amber); }
+:root :is(.agent-failed, .agent-interrupted):hover { border-left-color: var(--red); }
+.topbar-actions { flex-wrap: wrap; flex-shrink: 1; max-width: 100%; gap: 6px; }
+.theme-swatch { display: grid; place-items: center; font: 12px ui-monospace, monospace; }
+.swatch-design { background-color: var(--dashboard-card); box-shadow: inset 5px 0 var(--dashboard-accent); border-color: var(--border); }
+.swatch-theme { background: var(--dashboard-card); box-shadow: inset 5px 0 var(--dashboard-accent); border-color: var(--border); }
+.swatch-theme.swatch-rounded { border-radius: 10px; }
+.swatch-theme.swatch-chamfered { border-radius: 0; }
+.swatch-theme.swatch-flat { border-radius: 0; box-shadow: inset 0 3px var(--dashboard-accent); }
+.swatch-theme.swatch-layered { border-radius: 12px; box-shadow: inset 0 0 0 4px var(--dashboard-sidebar), 0 3px 8px #0004; }
+.swatch-theme.swatch-glass { border-radius: 12px; background: linear-gradient(135deg, var(--dashboard-card), color-mix(in srgb, var(--dashboard-accent) 30%, var(--dashboard-card))); box-shadow: inset 0 1px #ffffff66; }
+
+.swatch-design.swatch-modern { background-image: repeating-linear-gradient(0deg, transparent 0 7px, color-mix(in srgb, var(--dashboard-accent) 65%, transparent) 8px 9px); }

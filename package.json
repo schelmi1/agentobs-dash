@@ -1,0 +1,57 @@
+{
+  "name": "agentobs-dash",
+  "version": "0.1.0",
+  "description": "A local dashboard for observing coding agents across projects.",
+  "private": true,
+  "license": "MIT",
+  "files": [
+    "bin",
+    "lib",
+    "public",
+    "docs/assets",
+    "README.md",
+    "ARCHITECTURE.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "agentobs": "bin/agentobs.js"
+  },
+  "scripts": {
+    "start": "node bin/agentobs.js",
+    "test": "node --test test/*.test.js",
+    "test:ui": "node test/modern-transcript-playwright.js",
+    "test:playwright": "node test/modern-transcript-playwright.js",
+    "test:copilot": "node test/copilot-modern-playwright.js",
+    "test:new-harnesses": "node test/new-harnesses-playwright.js",
+    "test:settings": "node test/settings-playwright.js",
+    "test:themes": "node test/modern-playwright.js",
+    "test:theme-shapes": "node test/theme-shapes-playwright.js",
+    "test:contrast": "node test/appearance-contrast-playwright.js",
+    "test:production": "node test/production-playwright.js",
+    "test:modern": "node test/modern-playwright.js",
+    "test:new-themes": "node test/new-themes-playwright.js",
+    "test:modern-hierarchy": "node test/modern-hierarchy-playwright.js",
+    "test:modern-large-cards": "node test/modern-large-cards-playwright.js",
+    "test:modern-completed-nodes": "node test/modern-completed-nodes-playwright.js",
+    "test:modern-multi": "node test/modern-multi-playwright.js",
+    "test:modern-transcript": "node test/modern-transcript-playwright.js",
+    "test:poll": "node test/poll-playwright.js",
+    "test:package": "node test/package.js",
+    "browser:install": "playwright install chromium",
+    "fixture:copilot": "node scripts/copilot-fixture.js",
+    "demo:copilot": "node scripts/copilot-demo.js",
+    "demo:agents": "node scripts/agent-simulation.js",
+    "test:sidebar": "node test/sidebar-playwright.js",
+    "test:modern-zoom-reflow": "node test/modern-zoom-reflow-playwright.js",
+    "test:modern-double-click": "node test/modern-double-click-playwright.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.64.1"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3"
+  }
+}

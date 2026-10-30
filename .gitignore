@@ -1,0 +1,20 @@
+node_modules/
+.agentobs/
+.env
+.env.*
+.aws/
+.codex/
+.agents/
+coverage/
+*.log
+.DS_Store
+
+# Local design review artifacts
+docs/reviews/
+docs/designs/
+docs/research/
+docs/ui-ux-review/
+docs/ui-ux-fixes/
+
+# Documentation drafts stay local; README media remains tracked.
+/docs/**/*.md

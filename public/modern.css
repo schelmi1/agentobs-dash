@@ -1,0 +1,460 @@
+/* Experimental Modern network: spatial structure without zooming away labels. */
+:root[data-design='modern'] .modern-board { display: grid; gap: 22px; padding: 4px 0 28px; }
+:root[data-design='modern'] .modern-intro { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding: 28px 30px; border: 1px solid var(--border); border-radius: 3px; background: radial-gradient(ellipse at 85% 0%, color-mix(in srgb, var(--dashboard-accent) 17%, transparent), transparent 52%), var(--dashboard-card); }
+.modern-eyebrow { display: block; color: var(--dashboard-accent); font-size: 10px; font-weight: 750; letter-spacing: .15em; line-height: 1.4; }
+.modern-provider-label[data-provider='codex'] { color: hsl(210 65% var(--tool-lightness)); }
+.modern-provider-label[data-provider='copilot-vscode'] { color: hsl(275 65% var(--tool-lightness)); }
+.modern-provider-label[data-provider='claude-code'] { color: hsl(25 65% var(--tool-lightness)); }
+.modern-provider-label[data-provider='opencode'] { color: hsl(145 65% var(--tool-lightness)); }
+.modern-intro h2 { margin: 10px 0 6px; font-size: clamp(27px, 3vw, 40px); font-weight: 650; letter-spacing: -.045em; line-height: 1.1; }
+.modern-intro p { margin: 0; color: var(--muted); font-size: 13px; }
+.modern-overview { display: flex; flex: 0 0 auto; }
+.modern-stat { min-width: 100px; padding: 0 20px; border-left: 1px solid var(--border); }
+.modern-stat strong, .modern-stat span { display: block; }
+.modern-stat strong { font-size: 28px; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
+.modern-stat span { margin-top: 7px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.modern-run { overflow: hidden; border: 1px solid var(--border); border-radius: 3px; background: var(--dashboard-card); }
+.modern-run-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 22px 24px; }
+.modern-run-heading { min-width: 0; }
+.modern-run-heading h3 { margin: 7px 0 4px; font-size: 19px; font-weight: 650; line-height: 1.3; overflow-wrap: anywhere; }
+.modern-workspace { display: block; color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.modern-workspace-totals { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; font-size: 10px; font-variant-numeric: tabular-nums; }
+.modern-workspace-token { display: inline-flex; gap: 5px; align-items: baseline; white-space: nowrap; }
+.modern-workspace-token-label { color: var(--muted); font-size: 9px; letter-spacing: .04em; }
+.modern-workspace-token strong { color: var(--vscode-foreground); font-weight: 600; }
+.modern-run-info { display: flex; flex-wrap: wrap; justify-content: end; gap: 8px; font-size: 11px; }
+.modern-run-count, .modern-attention, .modern-clear { padding: 7px 10px; border: 1px solid var(--border); white-space: nowrap; }
+.modern-history-state { padding: 7px 10px; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
+.modern-history-board { padding-top: 8px; }
+.modern-run-toggle { min-height: 32px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 5px; background: var(--dashboard-card); color: var(--vscode-foreground); font-size: 11px; white-space: nowrap; }
+.modern-run-toggle:hover { background: var(--dashboard-hover); }
+.modern-attention { border-color: var(--amber); color: var(--vscode-foreground); background: color-mix(in srgb, var(--amber) 16%, var(--dashboard-card)); }
+.modern-clear { color: var(--muted); }
+.modern-graph-header { display: flex; justify-content: space-between; gap: 10px; padding: 9px 24px; border-block: 1px solid var(--border); color: var(--muted); font-size: 10px; }
+.modern-fit { min-height: 32px; padding: 5px 10px; font-size: 11px; }
+.modern-graph-header span:first-child { color: var(--dashboard-accent); font-weight: 700; letter-spacing: .1em; }
+.modern-graph-viewport { max-height: 520px; min-height: 200px; overflow: auto; background-color: var(--vscode-editor-background); background-image: linear-gradient(color-mix(in srgb, var(--dashboard-accent) 5%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--dashboard-accent) 5%, transparent) 1px, transparent 1px); background-size: 24px 24px; }
+.modern-graph-viewport:focus-visible { outline: 2px solid var(--vscode-focusBorder); outline-offset: -3px; }
+.modern-graph { position: relative; min-width: 100%; }
+.modern-links { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+.modern-links path { fill: none; stroke: var(--dashboard-accent); stroke-width: 1.5; opacity: .55; vector-effect: non-scaling-stroke; }
+.modern-links path.is-lineage { opacity: 1; stroke-width: 3; }
+.modern-list { position: absolute; inset: 0; list-style: none; margin: 0; padding: 0; }
+.modern-item { position: absolute; width: 254px; height: 114px; }
+.modern-branch-toggle { position: absolute; z-index: 2; top: 44px; left: 244px; min-width: 24px; height: 24px; padding: 0 4px; border: 1px solid var(--dashboard-accent); border-radius: 50%; background: var(--dashboard-card); color: var(--vscode-foreground); font-size: 11px; line-height: 1; }
+.modern-branch-toggle:hover { background: var(--dashboard-hover); }
+.modern-completed-toggle { position: absolute; top: calc(100% + 2px); left: 0; z-index: 2; min-height: 22px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--dashboard-card); color: var(--muted); font-size: 11px; line-height: 1; white-space: nowrap; }
+.modern-completed-toggle:hover, .modern-completed-toggle:focus-visible { color: var(--vscode-foreground); border-color: var(--dashboard-accent); }
+:root[data-design='modern'] .modern-agent, :root[data-design='modern'] .modern-agent:hover { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; width: 254px; height: 114px; padding: 12px 13px; border: 1px solid color-mix(in srgb, var(--dashboard-accent) 38%, var(--border)); border-left: 3px solid var(--dashboard-accent); border-radius: 3px; background: var(--dashboard-card); color: var(--vscode-foreground); text-align: left; box-shadow: 0 7px 24px #0002; clip-path: none; animation: none; }
+:root[data-design='modern'] .modern-agent:hover { background: var(--dashboard-hover); border-color: var(--dashboard-accent); }
+:root[data-design='modern'] .modern-agent.selected { background: var(--dashboard-selected); outline: 2px solid var(--dashboard-accent); outline-offset: 2px; }
+:root[data-design='modern'] .modern-agent:focus-visible { outline: 2px solid var(--vscode-focusBorder); outline-offset: 3px; }
+:root[data-design='modern'] .modern-agent:is(.agent-input, .agent-starting) { border-left-color: var(--amber); }
+:root[data-design='modern'] .modern-agent:is(.agent-failed, .agent-interrupted) { border-left-color: var(--red); }
+.modern-node-top, .modern-node-footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-width: 0; width: 100%; }
+.modern-node-id { min-width: 0; color: var(--dashboard-accent); font-size: 10px; font-weight: 700; letter-spacing: .04em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.modern-task { display: -webkit-box; min-height: 0; width: 100%; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 14px; font-weight: 650; line-height: 1.25; overflow-wrap: anywhere; }
+.modern-action-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 11px; }
+.modern-tokens { flex: 0 0 auto; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.modern-state { flex: 0 0 auto; font-size: 10px; font-weight: 650; white-space: nowrap; }
+:root[data-design='modern'] .modern-state { color: var(--vscode-foreground); }
+.modern-state::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--modern-state-color, var(--muted)); margin-right: 5px; vertical-align: 1px; }
+.modern-state:is(.status-working, .status-tool) { --modern-state-color: var(--green); }
+.modern-state:is(.status-input, .status-starting) { --modern-state-color: var(--amber); }
+.modern-state:is(.status-failed, .status-interrupted) { --modern-state-color: var(--red); }
+@media (max-width: 760px) {
+  :root[data-design='modern'] .modern-intro { align-items: start; flex-direction: column; padding: 22px; }
+  .modern-overview { width: 100%; }
+  .modern-stat { flex: 1; min-width: 0; padding: 0 12px; }
+  .modern-stat:first-child { border-left: 0; padding-left: 0; }
+  .modern-stat strong { font-size: 24px; }
+  .modern-stat span { font-size: 10px; white-space: normal; }
+  .modern-run-header { align-items: start; flex-direction: column; padding: 20px; }
+  .modern-run-info { justify-content: start; }
+  .modern-graph-header { flex-direction: column; padding: 9px 20px; }
+  .modern-graph-viewport { max-height: 420px; }
+}
+@media (max-width: 600px) {
+  .modern-item, :root[data-design='modern'] .modern-agent, :root[data-design='modern'] .modern-agent:hover { width: 230px; }
+  .modern-branch-toggle { left: 220px; }
+}
+/* The experimental design gets its own compact instrument header. */
+:root:not([data-design='modern']) .metric-tools-running { display: none; }
+:root[data-design='modern'] :is(.metric-token-heading .token-help, #token-explanation) { display: none; }
+:root[data-design='modern'] .dashboard-header { background: var(--dashboard-sidebar); border-bottom: 1px solid color-mix(in srgb, var(--dashboard-accent) 32%, var(--border)); }
+:root[data-design='modern'] .dashboard-header .metric { border: 0; border-left: 1px solid var(--border); border-radius: 0; background: transparent; padding-inline: 14px; }
+:root[data-design='modern'] .dashboard-header .metric:first-child { border-left: 0; }
+:root[data-design='modern'] .dashboard-header .metric strong { font-size: 18px; }
+:root[data-design='modern'] .dashboard-header .metric > span, :root[data-design='modern'] .metric-token-heading { letter-spacing: .1em; font-weight: 650; }
+:root[data-design='modern'] .workspace-trigger { border-radius: 2px; }
+:root[data-design='modern'] .dashboard-header .toolbar-button { border-radius: 2px; }
+:root[data-design='modern'] .overview { border-top-color: color-mix(in srgb, var(--dashboard-accent) 20%, var(--border)); }
+@media (min-width: 1250px) and (min-height: 501px) {
+  :root[data-design='modern'] .header-inner { grid-template-columns: auto minmax(160px, 230px) minmax(0, 1fr); grid-template-areas: 'identity workspaces controls' 'overview overview overview'; gap: 8px 24px; padding-block: 10px; }
+  :root[data-design='modern'] .header-identity { min-width: 0; }
+  :root[data-design='modern'] .brand-slogan { display: none; }
+  :root[data-design='modern'] .header-inner > .activity-controls { grid-column: 1 / -1; }
+  :root[data-design='modern'] .overview { padding-top: 4px; }
+}
+@media (max-width: 760px), (max-height: 500px) {
+  :root[data-design='modern'] .dashboard-header .metric { padding-inline: 7px; }
+  :root[data-design='modern'] .dashboard-header .metric strong { font-size: 16px; }
+  :root[data-design='modern'] .brand-slogan { display: none; }
+}
+
+/* Modern observatory: a navigation rail, not the shared dashboard header. */
+:root[data-design='modern'] .modern-intro { padding: 8px 2px 16px; border: 0; border-radius: 0; background: transparent; }
+:root[data-design='modern'] .modern-intro h2 { font-size: clamp(25px, 2.5vw, 34px); }
+:root[data-design='modern'] .modern-intro p { font-size: 12px; }
+:root[data-design='modern'] .modern-stat { min-width: 84px; padding-inline: 14px; }
+:root[data-design='modern'] .modern-stat strong { font-size: 22px; }
+:root[data-design='modern'] .modern-run { border-radius: 12px; }
+:root[data-design='modern'] .modern-run-header { padding: 18px 22px; }
+:root[data-design='modern'] .modern-run-heading h3 { font-size: 17px; }
+:root[data-design='modern'] .modern-graph-header { background: color-mix(in srgb, var(--dashboard-accent) 5%, var(--dashboard-card)); }
+:root[data-design='modern'] .modern-graph-viewport { max-height: 580px; background-image: radial-gradient(color-mix(in srgb, var(--dashboard-accent) 22%, transparent) .8px, transparent 1px), radial-gradient(ellipse at 20% 0%, color-mix(in srgb, var(--dashboard-accent) 9%, transparent), transparent 52%); background-size: 20px 20px, 100% 100%; }
+:root[data-design='modern'] .modern-links path { stroke-width: 2; opacity: .5; }
+:root[data-design='modern'] .modern-links path.is-lineage { stroke-width: 3; opacity: 1; }
+:root[data-design='modern'] .modern-item { width: 300px; height: 164px; }
+:root[data-design='modern'] .modern-agent, :root[data-design='modern'] .modern-agent:hover { width: 300px; height: 164px; gap: 6px; padding: 13px 14px; border: 1px solid color-mix(in srgb, var(--dashboard-accent) 36%, var(--border)); border-left: 3px solid var(--dashboard-accent); border-radius: 10px; background: var(--dashboard-card); box-shadow: 0 8px 24px #0003; }
+:root[data-design='modern'] .modern-agent:hover { background: var(--dashboard-hover); border-color: var(--dashboard-accent); }
+:root[data-design='modern'] .modern-agent.selected { background: var(--dashboard-selected); }
+:root[data-design='modern'] .modern-branch-toggle { left: 288px; top: 70px; width: 25px; height: 25px; }
+:root[data-design='modern'] .map-content.compact .modern-item,
+:root[data-design='modern'] .map-content.compact .modern-agent,
+:root[data-design='modern'] .map-content.compact .modern-agent:hover { height: 136px; }
+:root[data-design='modern'] .map-content.compact .modern-agent,
+:root[data-design='modern'] .map-content.compact .modern-agent:hover { gap: 3px; padding: 8px 12px; }
+:root[data-design='modern'] .map-content.compact .modern-execution { padding: 3px 8px; }
+:root[data-design='modern'] .map-content.compact .modern-branch-toggle { top: 56px; }
+.modern-execution { display: grid; gap: 2px; width: 100%; min-width: 0; padding: 7px 9px; border-left: 2px solid var(--dashboard-accent); background: color-mix(in srgb, var(--dashboard-accent) 10%, var(--dashboard-card)); }
+.modern-execution-caption { color: var(--muted); font-size: 9px; letter-spacing: .08em; font-weight: 700; line-height: 1.2; }
+:root[data-design='modern'] .modern-action-text { color: var(--vscode-foreground); font-size: 12px; font-weight: 600; line-height: 1.3; }
+:root[data-design='modern'] .modern-tokens { letter-spacing: .03em; font-size: 9px; }
+@media all {
+  :root[data-design='modern'] { scroll-padding-top: 18px; }
+  :root[data-design='modern'] .dashboard-shell { display: grid; grid-template-columns: 240px minmax(0, 1fr); align-items: start; }
+  :root[data-design='modern'] .dashboard-header { position: sticky; top: 0; width: 240px; height: 100vh; min-height: 0; border-right: 1px solid var(--border); border-bottom: 0; }
+  :root[data-design='modern'] .header-inner { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: 'identity' 'workspaces' 'overview' 'controls'; align-content: start; gap: 16px; padding: 24px 16px; }
+  :root[data-design='modern'] .header-identity { display: flex; padding: 0 0 10px; border-bottom: 1px solid var(--border); }
+  :root[data-design='modern'] .brand-mark { width: 38px; }
+  :root[data-design='modern'] .brand { font-size: 19px; }
+  :root[data-design='modern'] .brand-slogan { display: none; }
+  :root[data-design='modern'] .workspace-picker { max-width: none; }
+  :root[data-design='modern'] .workspace-trigger { min-height: 48px; border-radius: 8px; }
+  :root[data-design='modern'] .workspace-menu { left: 0; width: 360px; }
+  :root[data-design='modern'] .overview { padding: 12px 0; border-block: 1px solid var(--border); }
+  :root[data-design='modern'] .metric-grid { grid-template-columns: 1fr 1fr; gap: 4px; }
+  :root[data-design='modern'] .dashboard-header .metric, :root[data-design='modern'] .dashboard-header .metric:first-child { min-height: 58px; display: flex; flex-direction: column-reverse; align-items: flex-start; justify-content: center; gap: 3px; padding: 8px 9px; border: 0; border-radius: 6px; background: var(--dashboard-card); }
+  :root[data-design='modern'] .dashboard-header .metric strong { font-size: 20px; }
+  :root[data-design='modern'] .dashboard-header .metric > span { font-size: 9px; letter-spacing: .04em; }
+  :root[data-design='modern'] .dashboard-header .metric-token-usage { grid-column: 1 / -1; min-height: 62px; display: grid; grid-template-columns: 1fr; gap: 5px; }
+  :root[data-design='modern'] .metric-token-values { width: 100%; }
+  :root[data-design='modern'] .metric-token-values dd { font-size: 14px; }
+  :root[data-design='modern'] .topbar { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+  :root[data-design='modern'] .topbar > .root-scope { display: flex; flex: none; max-width: none; order: 2; padding: 10px 2px; border-top: 1px solid var(--border); }
+  :root[data-design='modern'] .topbar-actions, :root[data-design='modern'] .header-settings:not([popover]) { display: flex; flex-direction: column; align-items: stretch; width: 100%; gap: 6px; }
+  :root[data-design='modern'] .header-settings .theme-picker, :root[data-design='modern'] .header-settings .toolbar-button { width: 100%; }
+  :root[data-design='modern'] .header-settings .appearance-toggle { display: flex; justify-content: space-between; padding: 9px 10px; border-radius: var(--control-radius); font-size: 11px; }
+  :root[data-design='modern'] .header-settings > .toolbar-button, :root[data-design='modern'] .settings-open { text-align: left; padding-inline: 10px; }
+  :root[data-design='modern'] .appearance-value-reserve { display: none; }
+  :root[data-design='modern'] .appearance-value { flex: 1; text-align: right; }
+  :root[data-design='modern'] .status-picker, :root[data-design='modern'] .connection { width: 100%; }
+  :root[data-design='modern'] .connection { text-align: left; }
+  :root[data-design='modern'] .dashboard-main { padding: 0 28px; min-width: 0; }
+  :root[data-design='modern'] .inspector { top: 16px; }
+}
+@media (max-width: 760px), (max-height: 700px) {
+  :root[data-design='modern'] .modern-intro { gap: 14px; padding: 12px 0 16px; }
+  :root[data-design='modern'] .modern-stat { min-width: 0; padding-inline: 8px; }
+  :root[data-design='modern'] .modern-stat:first-child { padding-left: 0; }
+  :root[data-design='modern'] .modern-stat strong { font-size: 20px; }
+}
+@media (max-width: 600px) {
+  :root[data-design='modern'] .modern-item, :root[data-design='modern'] .modern-agent, :root[data-design='modern'] .modern-agent:hover { width: 260px; }
+  :root[data-design='modern'] .modern-branch-toggle { left: 248px; }
+}
+.modern-run-body { display: grid; grid-template-columns: minmax(0, 1fr) 220px; align-items: stretch; }
+.modern-tools-panel { min-width: 0; max-height: 580px; overflow: auto; border-left: 1px solid var(--border); background: var(--dashboard-card); }
+.modern-tools-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 15px 14px 10px; }
+.modern-tools-header > span:last-child { color: var(--muted); font-size: 10px; }
+.modern-calls { list-style: none; padding: 0 8px; margin: 0; }
+.modern-call + .modern-call { border-top: 1px solid var(--border); }
+.modern-call-button { display: grid; gap: 3px; width: 100%; padding: 10px 7px; border: 0; border-radius: 5px; background: transparent; color: var(--vscode-foreground); text-align: left; }
+.modern-call-button:hover { background: var(--dashboard-hover); }
+.modern-call-title { display: flex; align-items: start; justify-content: space-between; gap: 6px; min-width: 0; }
+.modern-call-title strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.modern-call-outcome { flex: 0 0 auto; color: var(--muted); font-size: 10px; }
+.modern-call-actor { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 11px; }
+.modern-call-time { color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.modern-calls-note, .modern-calls-empty { margin: 8px 15px 14px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.modern-calls-toggle { margin: 0 14px 14px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--dashboard-card); color: var(--vscode-foreground); font-size: 11px; }
+@media (max-width: 950px) {
+  .modern-run-body { grid-template-columns: minmax(0, 1fr); }
+  .modern-tools-panel { max-height: 230px; border-top: 1px solid var(--border); border-left: 0; }
+}
+
+/* Keep the network primary; tool activity travels in a compact horizontal rail. */
+:root[data-design='modern'] .activity-controls > .summary { display: none; }
+@media (min-width: 761px) and (min-height: 501px) {
+  :root[data-design='modern'] .activity-controls > .heading { display: none; }
+}
+@media (max-width: 760px), (max-height: 500px) {
+  :root[data-design='modern'] .activity-controls .heading h2 { display: none; }
+}
+:root[data-design='modern'] .modern-intro { padding-block: 2px 12px; align-items: center; }
+:root[data-design='modern'] .modern-intro h2 { margin: 5px 0 3px; }
+:root[data-design='modern'] .modern-intro p { margin: 0; }
+:root[data-design='modern'] .modern-overview { width: auto; }
+:root[data-design='modern'] .modern-stat { padding: 4px 14px; border-left: 2px solid var(--dashboard-accent); }
+:root[data-design='modern'] .modern-stat span { margin-top: 3px; }
+:root[data-design='modern'] .modern-run-body { display: flex; flex-direction: column; }
+:root[data-design='modern'] .modern-graph-viewport { max-height: 464px; }
+:root[data-design='modern'] .modern-tools-panel { min-height: 165px; max-height: none; overflow: visible; border-left: 0; border-top: 1px solid var(--border); }
+:root[data-design='modern'] .modern-tools-header { padding: 10px 14px 4px; }
+:root[data-design='modern'] .modern-calls { display: flex; gap: 6px; overflow-x: auto; padding: 2px 12px 8px; }
+:root[data-design='modern'] .modern-call { flex: 0 0 170px; min-width: 0; border: 1px solid var(--border); border-radius: 6px; }
+:root[data-design='modern'] .modern-call + .modern-call { border-top: 1px solid var(--border); }
+:root[data-design='modern'] .modern-call-button { min-height: 68px; padding: 8px; }
+:root[data-design='modern'] .modern-calls-note { display: inline-block; margin: 2px 12px 9px; }
+:root[data-design='modern'] .modern-calls-toggle { margin: 0 12px 8px 0; }
+:root[data-design='modern'] .modern-node-id, :root[data-design='modern'] .modern-state { font-size: 11px; }
+:root[data-design='modern'] .modern-state:is(.status-input, .status-failed, .status-interrupted) { padding: 3px 6px; border-radius: 4px; background: color-mix(in srgb, var(--modern-state-color, var(--amber)) 17%, var(--dashboard-card)); }
+:root[data-design='modern'] .modern-execution-caption { font-size: 10px; }
+:root[data-design='modern'] .modern-tokens { font-size: 11px; }
+@media (max-width: 760px) {
+  :root[data-design='modern'] .modern-intro { flex-direction: row; align-items: end; gap: 12px; }
+  :root[data-design='modern'] .modern-intro h2 { font-size: 25px; }
+  :root[data-design='modern'] .modern-intro p { font-size: 11px; }
+  :root[data-design='modern'] .modern-stat { min-width: 72px; flex: none; }
+  :root[data-design='modern'] .modern-graph-viewport { max-height: 674px; }
+}
+
+/* Modern desktop navigation is a workspace rail, with controls disclosed on demand. */
+.modern-navigation { display: none; }
+@media all {
+  :root[data-design='modern'] .header-inner { height: 100%; grid-template-areas: 'identity' 'workspaces' 'navigation' 'overview' 'controls'; grid-template-rows: auto auto auto auto 1fr; gap: 22px; padding: 24px 16px 20px; }
+  :root[data-design='modern'] .header-identity { padding-bottom: 16px; }
+  :root[data-design='modern'] .header-identity::after { content: 'AGENTOBS'; display: block; width: 100%; margin-top: 3px; color: var(--muted); font-size: 9px; font-weight: 650; letter-spacing: .13em; }
+  :root[data-design='modern'] .workspace-trigger { min-height: 55px; padding: 9px; border-color: color-mix(in srgb, var(--dashboard-accent) 20%, var(--border)); background: color-mix(in srgb, var(--dashboard-accent) 8%, var(--dashboard-card)); }
+  :root[data-design='modern'] .workspace-trigger-label { font-size: 12px; font-weight: 650; }
+  :root[data-design='modern'] .workspace-trigger-stats { margin-top: 4px; font-size: 10px; }
+  :root[data-design='modern'] .modern-navigation:not([hidden]) { grid-area: navigation; display: grid; gap: 3px; }
+  .modern-nav-heading { padding: 0 10px 7px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+  .modern-nav-item { display: flex; align-items: center; gap: 10px; min-height: 38px; width: 100%; padding: 8px 10px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--vscode-foreground); text-align: left; font-size: 12px; }
+  .modern-nav-item:hover:not(:disabled) { background: var(--dashboard-hover); }
+  .modern-nav-item.is-current { border-color: color-mix(in srgb, var(--dashboard-accent) 25%, var(--border)); background: var(--dashboard-selected); color: var(--vscode-foreground); font-weight: 650; }
+  .modern-nav-item:disabled { cursor: default; opacity: .48; }
+  .modern-nav-icon { width: 18px; color: var(--dashboard-accent); font-size: 16px; line-height: 1; text-align: center; }
+  .modern-nav-label { flex: 1; }
+  .modern-nav-count:not(:empty) { min-width: 23px; padding: 2px 6px; border-radius: 20px; background: color-mix(in srgb, var(--amber) 18%, var(--dashboard-card)); color: var(--vscode-foreground); text-align: center; font-size: 10px; }
+  :root[data-design='modern'] .overview { display: block; padding: 16px 10px; border: 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  :root[data-design='modern'] .overview::before { content: 'OBSERVED IN SCOPE'; display: block; margin-bottom: 10px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+  :root[data-design='modern'] .metric-grid { display: grid; grid-template-columns: 1fr; gap: 9px; }
+  :root[data-design='modern'] .dashboard-header .metric, :root[data-design='modern'] .dashboard-header .metric:first-child { display: flex; flex-direction: row; align-items: center; justify-content: space-between; min-height: 0; padding: 0; border: 0; background: transparent; }
+  :root[data-design='modern'][data-dashboard-theme='chamfered'] .dashboard-header .metric { clip-path: none; }
+  :root[data-design='modern'] .dashboard-header .metric:nth-child(3) { display: none; }
+  :root[data-design='modern'] .dashboard-header .metric > span { font-size: 10px; letter-spacing: .02em; }
+  :root[data-design='modern'] .dashboard-header .metric strong { font-size: 14px; font-weight: 650; }
+  :root[data-design='modern'] .dashboard-header .metric-token-usage { display: grid; gap: 7px; padding-top: 7px; border-top: 1px solid var(--border); }
+  :root[data-design='modern'] .metric-token-values dd { font-size: 12px; }
+  :root[data-design='modern'] .topbar { align-self: end; }
+  :root[data-design='modern'] .topbar > .root-scope { padding: 7px 2px 0; border: 0; }
+  :root[data-design='modern'] .connection { min-height: 38px; padding: 9px 10px; border-radius: 7px; }
+}
+@media all {
+  :root[data-design='modern'] .header-inner { overflow-y: auto; }
+}
+@media (max-height: 850px) {
+  :root[data-design='modern'] .header-inner { gap: 10px; padding-block: 12px; }
+  :root[data-design='modern'] .overview { padding-block: 10px; }
+}
+@media (max-width: 760px), (max-height: 500px) {
+  :root[data-design='modern'] .header-inner { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'identity' 'workspaces' 'controls' 'overview'; }
+  :root[data-design='modern'] .topbar > .topbar-actions { flex-wrap: wrap; justify-content: flex-start; }
+  :root[data-design='modern'] .header-settings:not([popover]) { flex-wrap: wrap; }
+}
+
+/* Workspace arrangement is independent of each graph's internal layout. */
+.modern-arrangement { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.modern-arrangement-label { margin-right: 5px; color: var(--muted); font-size: 11px; font-weight: 650; }
+.modern-arrangement-button[aria-pressed='true'] { border-color: var(--dashboard-accent); background: var(--dashboard-selected); color: var(--vscode-foreground); }
+:root[data-design='modern'] .modern-board { gap: 12px; }
+:root[data-design='modern'] .modern-intro { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 8px 16px; padding: 0 0 2px; }
+:root[data-design='modern'] .modern-intro h2 { margin: 0; font-size: 20px; letter-spacing: -.025em; }
+:root[data-design='modern'] .modern-overview { width: auto; }
+:root[data-design='modern'] .modern-stat { display: flex; align-items: baseline; gap: 5px; min-width: 0; padding: 0 0 0 12px; }
+:root[data-design='modern'] .modern-stat strong { font-size: 16px; }
+:root[data-design='modern'] .modern-stat span { margin: 0; font-size: 11px; }
+:root[data-design='modern'] .modern-arrangement { margin-left: auto; }
+@media (max-width: 600px) { :root[data-design='modern'] .modern-arrangement { flex-basis: 100%; margin-left: 0; } }
+.modern-runs { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 20px; min-width: 0; }
+.modern-runs[data-arrangement='grid'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.modern-runs[data-arrangement='row'] { grid-template-columns: repeat(var(--modern-columns, 1), minmax(0, 1fr)); }
+.modern-runs > .modern-run { min-width: 0; container: modern-run / inline-size; }
+.modern-graph-viewport[data-compact='true'] .modern-item, :root[data-design='modern'] .modern-graph-viewport[data-compact='true'] .modern-agent, :root[data-design='modern'] .modern-graph-viewport[data-compact='true'] .modern-agent:hover { width: 260px; }
+:root[data-design='modern'] .modern-graph-viewport[data-compact='true'] .modern-branch-toggle { left: 248px; }
+@container modern-run (max-width: 620px) {
+  .modern-run-header { flex-wrap: wrap; }
+  .modern-run-heading { flex: 1 1 200px; }
+  .modern-run-info { justify-content: flex-start; }
+  .modern-graph-header { flex-wrap: wrap; }
+}
+@container (max-width: 1099px) {
+  .modern-runs[data-arrangement='row'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (max-width: 679px) {
+  .modern-runs:is([data-arrangement='grid'], [data-arrangement='row']) { grid-template-columns: minmax(0, 1fr); }
+}
+.modern-runs[data-arrangement='row']:has(> .modern-run:only-child) { grid-template-columns: minmax(0, 1fr); }
+/* A twelve-column grid lets individual workspaces grow without changing their neighbours' settings. */
+:root[data-design='modern'] .modern-runs { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+:root[data-design='modern'] .modern-runs > .modern-run { grid-column: span var(--modern-span, 12); }
+:root[data-design='modern'] .modern-runs[data-arrangement='grid'] > .modern-run { grid-column: span var(--modern-span, 6); }
+:root[data-design='modern'] .modern-runs[data-arrangement='row'] > .modern-run { grid-column: span var(--modern-span, calc(12 / var(--modern-columns, 1))); }
+@container (max-width: 1099px) { :root[data-design='modern'] .modern-runs > .modern-run { grid-column: span max(6, var(--modern-span, 6)) !important; } }
+@container (max-width: 1099px) { :root[data-design='modern'] .modern-runs[data-arrangement='column'] > .modern-run:not([data-span]) { grid-column: span 12 !important; } }
+@container (max-width: 679px) { :root[data-design='modern'] .modern-runs > .modern-run { grid-column: 1 / -1 !important; } }
+:root[data-design='modern'] .modern-runs[data-arrangement='column'] > .modern-run:not([data-span]) { grid-column: span 12; }
+.modern-graph-space { position: relative; }
+.modern-graph { min-width: 0; transform-origin: 0 0; }
+.modern-resize { display: block; margin-left: auto; }
+.map-content { container-type: inline-size; }
+.workspace-resize { flex: 0 0 30px; align-self: flex-end; height: 30px; padding: 0; border: 0; border-radius: 0; color: var(--muted); background: transparent; cursor: nwse-resize; touch-action: none; }
+.workspace-resize:hover { color: var(--dashboard-accent); background: var(--dashboard-hover); }
+.graph-selection-box { position: fixed; z-index: 100; pointer-events: none; border: 1px solid var(--dashboard-accent); background: color-mix(in srgb, var(--dashboard-accent) 18%, transparent); }
+.is-graph-selecting, .is-graph-selecting * { cursor: crosshair !important; user-select: none !important; }
+.is-graph-panning, .is-graph-panning * { cursor: grabbing !important; user-select: none !important; }
+
+/* Compact mode turns each full card into a status node without losing its detail. */
+:root[data-design='modern'] .density-button { display: none; }
+.modern-swarm-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 7px 14px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 10px; }
+.modern-swarm-key { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.modern-swarm-symbol { display: inline-block; width: 9px; height: 9px; border: 1px solid currentColor; border-radius: 50%; }
+.modern-swarm-symbol.is-tool { border: 0; background: linear-gradient(135deg, #e477a0, #c397ee, #6ebfc2); }
+.modern-swarm-symbol.is-working { background: var(--green); color: var(--green); }
+.modern-swarm-symbol.is-input { background: var(--amber); color: var(--amber); border-radius: 2px; }
+.modern-swarm-symbol.is-failed { background: var(--red); color: var(--red); border-radius: 1px; }
+.modern-swarm-symbol.is-completed, .modern-swarm-symbol.is-other { color: var(--muted); }
+.modern-swarm-symbol.is-other { border-style: dashed; }
+.modern-graph-viewport[data-swarm='true'] { display: flex; }
+:root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] { height: 464px; }
+@media (max-width: 760px) {
+  :root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] { height: 674px; }
+}
+.modern-graph-viewport[data-swarm='true'] .modern-graph-space { flex: 0 0 auto; margin: auto; }
+.modern-graph-viewport[data-swarm='true'] .modern-links path { opacity: .18; stroke-width: 1; }
+.modern-graph-viewport[data-swarm='true'] .modern-links path:is(.is-hovered, .is-lineage) { opacity: 1; stroke-width: 2; }
+:root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] .modern-swarm-item { width: 20px; height: 20px; }
+:root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] .modern-swarm-node,
+:root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] .modern-swarm-node:hover,
+:root[data-design='modern'] .map-content.compact .modern-graph-viewport[data-swarm='true'] .modern-swarm-node,
+:root[data-design='modern'] .map-content.compact .modern-graph-viewport[data-swarm='true'] .modern-swarm-node:hover { display: block; width: 20px; height: 20px; min-height: 0; padding: 0; border: max(2px, calc(1px / var(--swarm-zoom, 1))) solid var(--muted); border-radius: 50%; background: var(--dashboard-card); box-shadow: none; clip-path: none; animation: none; }
+:root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] .modern-swarm-node > * { display: none; }
+:root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] .modern-swarm-node:is(.agent-working, .agent-tool) { border-color: var(--green); background: var(--green); }
+:root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] .modern-swarm-node:is(.agent-input, .agent-starting) { border-color: var(--amber); border-radius: 4px; background: var(--amber); }
+:root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] .modern-swarm-node:is(.agent-failed, .agent-interrupted) { border-color: var(--red); border-radius: 3px; background: var(--red); }
+:root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] .modern-swarm-node:is(.agent-quiet, .agent-unknown) { border-style: dashed; }
+:root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] .modern-swarm-node.has-current-tool { border-color: hsl(var(--tool-hue) 65% var(--tool-lightness)); background: hsl(var(--tool-hue) 65% var(--tool-lightness)); }
+:root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] .modern-swarm-node:is(:hover, :focus-visible, .selected) { outline: 2px solid var(--dashboard-accent); outline-offset: 3px; }
+:root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] .modern-branch-toggle { left: 15px; top: -9px; min-width: 20px; width: auto; height: 20px; font-size: 10px; }
+.modern-swarm-preview { position: fixed; z-index: 150; width: min(300px, calc(100vw - 16px)); pointer-events: none; filter: drop-shadow(0 12px 20px #0006); }
+.modern-swarm-preview[hidden] { display: none; }
+:root[data-design='modern'] .modern-preview-card { display: flex; flex-direction: column; justify-content: space-between; gap: 6px; box-sizing: border-box; width: 100%; height: 164px; padding: 13px 14px; border: 1px solid color-mix(in srgb, var(--dashboard-accent) 36%, var(--border)); border-left: 3px solid var(--dashboard-accent); border-radius: 10px; background: var(--dashboard-card); color: var(--vscode-foreground); text-align: left; }
+:root[data-design='modern'] .modern-preview-card:is(.agent-working, .agent-tool) { border-left-color: var(--green); }
+:root[data-design='modern'] .modern-preview-card:is(.agent-input, .agent-starting) { border-left-color: var(--amber); }
+:root[data-design='modern'] .modern-preview-card:is(.agent-failed, .agent-interrupted) { border-left-color: var(--red); }
+
+/* Use the shared tool hue mapping, including command-specific exec colors. */
+.modern-execution.has-tool { --modern-tool-color: hsl(var(--tool-hue, 210) 65% var(--tool-lightness)); border-left-color: var(--modern-tool-color); background: color-mix(in srgb, var(--modern-tool-color) 12%, var(--dashboard-card)); }
+:root[data-design='modern'] .modern-execution.has-tool .modern-action-text { color: var(--modern-tool-color); }
+:root[data-design='modern'] .modern-call { --modern-tool-color: hsl(var(--tool-hue, 210) 65% var(--tool-lightness)); border-left: 2px solid var(--modern-tool-color); }
+.modern-call-title strong { color: var(--modern-tool-color); }
+
+/* Keep the AgentObs slogan visible in both the rail and compact header. */
+:root[data-design='modern'] .brand-slogan { display: inline-block; }
+@media all {
+  :root[data-design='modern'] .brand { flex-wrap: wrap; gap: 5px 8px; }
+  :root[data-design='modern'] .brand-slogan { flex-basis: 100%; padding: 0; border: 0; font-size: 11px; }
+  :root[data-design='modern'] .header-identity::after { display: none; }
+}
+/* Cluster outlines and node size communicate hierarchy independently of status. */
+.modern-graph-viewport[data-swarm='true'] .modern-swarm-cluster { fill: color-mix(in srgb, var(--dashboard-accent) 5%, transparent); stroke: var(--dashboard-accent); stroke-opacity: .5; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.modern-graph-viewport[data-swarm='true'] .modern-links path[data-level]:not([data-level='1']) { opacity: .72; stroke-width: 1.5; }
+.modern-graph-viewport[data-swarm='true'] .modern-links path[data-level]:is(.is-hovered, .is-lineage) { opacity: 1; stroke-width: 2; }
+:root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] .modern-swarm-node[data-level='0'],
+:root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] .modern-swarm-node[data-level='0']:hover { width: 24px; height: 24px; margin: -2px; }
+:root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] .modern-swarm-node:not([data-level='0']):not([data-level='1']),
+:root[data-design='modern'] .modern-graph-viewport[data-swarm='true'] .modern-swarm-node:not([data-level='0']):not([data-level='1']):hover { width: 12px; height: 12px; margin: 4px; }
+.modern-swarm-level-key { display: inline-flex; align-items: center; gap: 9px; margin-left: auto; color: var(--vscode-foreground); white-space: nowrap; }
+.modern-swarm-level-entry { display: inline-flex; align-items: center; gap: 4px; }
+.modern-swarm-level-mark { display: inline-block; border-radius: 50%; background: currentColor; }
+.modern-swarm-level-mark.is-main { width: 9px; height: 9px; }
+.modern-swarm-level-mark.is-one { width: 7px; height: 7px; }
+.modern-swarm-level-mark.is-deep { width: 4px; height: 4px; }
+:root[data-design='modern'] .map-content.compact .modern-graph-viewport[data-swarm='true'] .modern-swarm-node[data-level='0']:hover { width: 24px; height: 24px; }
+:root[data-design='modern'] .map-content.compact .modern-graph-viewport[data-swarm='true'] .modern-swarm-node:not([data-level='0']):not([data-level='1']):hover { width: 12px; height: 12px; }
+
+.modern-swarm-empty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 16px; text-align: center; color: var(--muted); font-size: 12px; }
+/* The divider trades graph height for a larger, scrollable activity panel. */
+.modern-tools-resize { display: grid; place-items: center; flex: 0 0 12px; width: 100%; height: 12px; padding: 0; border: 0; border-block: 1px solid var(--border); background: var(--dashboard-card); cursor: ns-resize; touch-action: none; }
+.modern-tools-resize::after { content: ''; width: 56px; height: 3px; background: var(--muted); opacity: .65; }
+.modern-tools-resize:hover::after, .modern-tools-resize:focus-visible::after { background: var(--dashboard-accent); opacity: 1; }
+:root[data-design='modern'] .modern-tools-panel[data-resized='true'] { flex: 0 0 auto; min-height: 0; overflow: auto; }
+:root[data-design='modern'] .modern-tools-panel[data-resized='true'] .modern-calls { flex-wrap: wrap; overflow: visible; align-content: start; }
+.is-modern-tools-resizing, .is-modern-tools-resizing * { cursor: ns-resize !important; user-select: none !important; }
+/* Branch context stays legible in the card view of large hierarchies. */
+.modern-node-context, .modern-branch-summary { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 10px; line-height: 1.2; }
+.modern-branch-summary { color: var(--vscode-foreground); }
+:root[data-design='modern'] .modern-graph-viewport[data-large-cards='true'] .modern-item,
+:root[data-design='modern'] .modern-graph-viewport[data-large-cards='true'] .modern-agent,
+:root[data-design='modern'] .modern-graph-viewport[data-large-cards='true'] .modern-agent:hover { height: 204px; }
+:root[data-design='modern'] .modern-graph-viewport[data-large-cards='true'] :is(.modern-node-top, .modern-node-context, .modern-execution, .modern-branch-summary, .modern-node-footer) { flex-shrink: 0; }
+.modern-tools-header { flex-wrap: wrap; }
+.modern-tool-scope { width: auto; min-width: 125px; max-width: 190px; min-height: 28px; padding: 3px 7px; font-size: 10px; }
+.modern-calls-navigation { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.modern-tool-target { flex-basis: 100%; color: var(--muted); font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* In the vertical phone header, the heading must size to its content. */
+@media (max-width: 760px) {
+  :root[data-design='modern'] .modern-run-header { gap: 10px; }
+  :root[data-design='modern'] .modern-run-heading { flex: 0 1 auto; width: 100%; align-self: stretch; }
+  :root[data-design='modern'] .modern-run-info { width: 100%; min-width: 0; }
+}
+
+/* Navigation is always a side rail. On narrow screens it opens over the page. */
+.sidebar-toggle, .sidebar-collapsed-mark { display: none; }
+:root[data-design='modern'] .header-settings .appearance-label { display: inline; }
+:root[data-design='modern'] .workspace-menu { position: fixed; }
+:root[data-design='modern'] .dashboard-header .header-inner { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'identity' 'workspaces' 'navigation' 'overview' 'controls'; }
+:root[data-design='modern'] .inspector { top: 16px; }
+@media (max-width: 760px) {
+  :root[data-design='modern'] .dashboard-shell { grid-template-columns: 52px minmax(0, 1fr); }
+  :root[data-design='modern'] .dashboard-header { width: 52px; height: 100dvh; }
+  :root[data-design='modern'] .dashboard-header[data-rail-open='true'] { width: min(240px, calc(100vw - 52px)); box-shadow: 8px 0 24px #0008; }
+  :root[data-design='modern'] .sidebar-toggle { display: grid; place-items: center; width: 40px; height: 40px; margin: 6px; padding: 0; border: 1px solid var(--border); border-radius: var(--control-radius); background: var(--dashboard-card); color: var(--vscode-foreground); font-size: 20px; cursor: pointer; }
+  :root[data-design='modern'] .dashboard-header:not([data-rail-open='true']) .sidebar-collapsed-mark { display: block; margin: 18px auto; }
+  :root[data-design='modern'] .dashboard-header .header-inner { height: calc(100% - 52px); padding: 12px 12px 18px; gap: 12px; }
+  :root[data-design='modern'] .dashboard-header:not([data-rail-open='true']) .header-inner { display: none; }
+  :root[data-design='modern'] .dashboard-main { padding: 0 12px; }
+  :root[data-design='modern'] .inspector { top: 12px; }
+  :root[data-design='modern'] .workspace-menu { width: min(360px, calc(100vw - 16px)); }
+}
+/* Open appearance menus must sit above the other sidebar controls. */
+:root[data-design='modern'] .theme-picker:has(.theme-menu:not([hidden])) { z-index: 110; }
+
+/* Keep the two utility actions together beneath appearance controls. */
+:root[data-design='modern'] .sidebar-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; width: 100%; }
+:root[data-design='modern'] .sidebar-actions .toolbar-button { display: flex; align-items: center; gap: 7px; min-width: 0; min-height: 38px; padding: 8px 10px; text-align: left; }
+:root[data-design='modern'] .sidebar-refresh::before, :root[data-design='modern'] .settings-open::before { display: inline-block; color: var(--dashboard-accent); font-size: 15px; line-height: 1; }
+:root[data-design='modern'] .sidebar-refresh::before { content: '↻'; }
+:root[data-design='modern'] .settings-open::before { content: '⚙'; }
+
+/* Theme and color selections share a compact row in the sidebar. */
+:root[data-design='modern'] .header-settings:not([popover]) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+:root[data-design='modern'] .header-settings .theme-picker { min-width: 0; }
+:root[data-design='modern'] .header-settings .appearance-toggle { gap: 6px; min-width: 0; }
+:root[data-design='modern'] .header-settings .appearance-label { display: none; }
+:root[data-design='modern'] .header-settings .appearance-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:root[data-design='modern'] .header-settings .appearance-toggle::before { color: var(--dashboard-accent); font-size: 15px; line-height: 1; }
+:root[data-design='modern'] .header-settings .theme-toggle::before { content: '◈'; }
+:root[data-design='modern'] .header-settings .colors-toggle::before { content: '◐'; }

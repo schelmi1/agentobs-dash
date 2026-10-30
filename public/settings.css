@@ -1,0 +1,35 @@
+.settings-open { min-height: 38px; }
+.settings-dialog { box-sizing: border-box; width: min(690px, calc(100vw - 32px)); max-width: none; max-height: min(850px, calc(100dvh - 32px)); padding: 0; border: 1px solid var(--border); border-radius: var(--panel-radius, 12px); background: var(--dashboard-card); color: var(--vscode-foreground); box-shadow: 0 20px 70px #0008; }
+.settings-dialog::backdrop { background: #0009; }
+.settings-dialog form { display: flex; flex-direction: column; max-height: inherit; }
+.settings-heading { display: flex; justify-content: space-between; gap: 20px; padding: 22px 24px 16px; border-bottom: 1px solid var(--border); }
+.settings-kicker { color: var(--dashboard-accent); font-size: 10px; font-weight: 700; letter-spacing: .13em; }
+.settings-heading h2 { margin: 6px 0; font-size: 22px; }
+.settings-heading p, .settings-help, .settings-meta { margin: 5px 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.settings-close { align-self: start; font-size: 20px !important; }
+.settings-content { overflow-y: auto; padding: 0 24px; }
+.settings-section { padding: 19px 0; border-bottom: 1px solid var(--border); }
+.settings-section h3 { margin: 0; font-size: 14px; }
+.settings-provider-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.settings-provider-heading h3 { flex: 1 1 auto; }
+.settings-provider-heading select { flex: 0 1 180px; width: auto; }
+.settings-label { display: block; margin: 12px 0 5px; font-size: 11px; font-weight: 650; }
+.settings-dialog input, .settings-dialog select { min-width: 0; box-sizing: border-box; padding: 9px 10px; border: 1px solid var(--border); border-radius: var(--control-radius, 6px); background: var(--vscode-input-background); color: var(--vscode-foreground); font: inherit; font-size: 12px; }
+.settings-root { width: 100%; }
+.settings-dialog button { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--control-radius, 6px); background: var(--dashboard-card); color: var(--vscode-foreground); cursor: pointer; font: inherit; font-size: 12px; }
+.settings-dialog button:hover { background: var(--dashboard-hover); }
+.settings-dialog :is(button, input, select):focus-visible { outline: 2px solid var(--dashboard-accent); outline-offset: 2px; }
+.settings-active { list-style: none; padding: 0; margin: 9px 0 0; }
+.settings-active li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 5px 0; font-size: 12px; }
+.settings-path { min-width: 0; overflow-wrap: anywhere; }
+.settings-path-status { flex: none; color: var(--muted); font-size: 11px; }
+.settings-notice { margin: 9px 0 0; padding: 8px 10px; border-left: 2px solid var(--amber); background: color-mix(in srgb, var(--amber) 10%, var(--dashboard-card)); font-size: 11px; line-height: 1.45; }
+.settings-path-editor { margin-top: 10px; }
+.settings-path-editor[hidden] { display: none; }
+.settings-path-row { display: flex; gap: 6px; margin: 6px 0; }
+.settings-path-row input { flex: 1; }
+.settings-restart { margin: 18px 0; color: var(--muted); font-size: 12px; }
+.settings-footer { display: flex; align-items: center; justify-content: end; gap: 8px; padding: 14px 24px; border-top: 1px solid var(--border); }
+.settings-footer p { flex: 1; margin: 0; color: var(--vscode-foreground); font-size: 12px; line-height: 1.4; }
+.settings-footer button[type=submit] { border-color: var(--dashboard-accent); background: var(--dashboard-selected); }
+@media (max-width: 600px) { .settings-heading { padding: 16px; } .settings-content { padding: 0 16px; } .settings-footer { flex-wrap: wrap; padding: 12px 16px; } .settings-footer p { flex-basis: 100%; } }

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Follow local coding agents, tools, and tasks across your workspace.">
+  <title>agentobs - Dont Trust. Observe.</title>
+  <link rel="icon" href="/icon.svg?v=ao" type="image/svg+xml">
+  <link rel="stylesheet" href="/live-map.css">
+  <link rel="stylesheet" href="/dashboard.css">
+  <link rel="stylesheet" href="/appearance.css">
+  <link rel="stylesheet" href="/themes.css">
+  <link rel="stylesheet" href="/board.css">
+  <link rel="stylesheet" href="/modern.css">
+  <link rel="stylesheet" href="/theme-shapes.css">
+  <link rel="stylesheet" href="/settings.css">
+  <script defer src="/color-themes/index.js"></script>
+  <script defer src="/appearance.js"></script>
+  <script defer src="/preferences.js"></script>
+  <script defer src="/snapshot.js"></script>
+  <script defer src="/selectors.js"></script>
+  <script defer src="/dom.js"></script>
+  <script defer src="/inspector.js"></script>
+  <script defer src="/agent-views.js"></script>
+  <script defer src="/status.js"></script>
+  <script defer src="/settings.js"></script>
+  <script defer src="/browser-host.js"></script>
+  <script defer src="/live-map.js"></script>
+</head>
+<body>
+  <div class="dashboard-shell">
+    <header class="dashboard-header" aria-label="agentobs">
+      <button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-label="Open sidebar" aria-controls="sidebar-content" aria-expanded="false">☰</button>
+      <svg class="sidebar-collapsed-mark" aria-hidden="true" width="32" height="22"><use href="/icon.svg#agentobs-mark"/></svg>
+      <div id="sidebar-content" class="header-inner">
+        <div class="header-identity">
+          <a class="brand" href="/" aria-label="agentobs home, version 0.1.0" aria-describedby="brand-slogan"><svg class="brand-mark" aria-hidden="true" focusable="false" width="48" height="30" viewBox="0 0 96 60"><use href="/icon.svg#agentobs-mark"/></svg><span class="brand-wordmark">agent<span class="brand-light">obs</span></span><span class="brand-version">0.1.0</span><span id="brand-slogan" class="brand-slogan">Don't Trust. Observe.</span></a>
+        </div>
+        <nav id="workspaces" class="workspace-picker" aria-label="Filter by workspace" data-open="false">
+          <button id="workspace-trigger" class="workspace-trigger" type="button" aria-label="Choose workspace" aria-haspopup="menu" aria-controls="workspace-menu" aria-expanded="false">
+            <span class="workspace-icon" aria-hidden="true">◈</span>
+            <span class="workspace-trigger-copy"><span id="workspace-selection" class="workspace-trigger-label">All workspaces</span><small class="workspace-trigger-stats"><span id="workspace-trigger-count">0</span> agents · <span id="workspace-trigger-tokens">—</span> tokens</small></span>
+            <span class="workspace-chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div id="workspace-menu" class="workspace-menu" role="menu" aria-label="Workspaces" aria-hidden="true" inert></div>
+        </nav>
+        <div class="topbar"><strong id="scope-name" class="sr-only">All workspaces</strong><div class="root-scope" aria-label="Monitored root"><span class="scope-label">Root</span><span id="root-folder" class="root-folder">Connecting…</span></div><div id="topbar-actions" class="topbar-actions" aria-label="Dashboard controls">
+          <button id="settings-open" class="toolbar-button settings-open" type="button" aria-haspopup="dialog">Settings</button>
+          <div id="status-picker" class="status-picker" data-severity="info">
+            <button id="status-trigger" class="connection" type="button" aria-label="Monitoring status" aria-expanded="false" aria-controls="status-menu" data-loading="true">Status <span id="status-loading-count"></span> <span aria-hidden="true">▾</span><span class="status-loading-track" aria-hidden="true"><span></span></span><span id="connection" class="sr-only" role="status">Connecting</span></button>
+            <section id="status-menu" class="status-menu" aria-label="Monitoring status details" tabindex="-1" hidden>
+              <div class="status-menu-heading"><strong id="status-name">Connecting</strong><span id="status-severity">Severity: Information</span></div>
+              <p id="status-summary">Waiting for the first observation.</p>
+              <h3>Reasons</h3><ul id="status-reasons"></ul>
+              <h3>Providers · last observation</h3><ul id="status-providers"></ul>
+              <p id="status-updated">No successful observation recorded yet.</p>
+            </section>
+          </div>
+        </div></div>
+        <section class="overview" aria-label="Mission control">
+          <div class="metric-grid">
+            <div class="metric" title="Agents working across your root"><span>LIVE AGENTS <span class="metric-dot green"></span></span><strong id="metric-live">—</strong></div>
+            <div class="metric" title="Input requests, failures, or quiet activity"><span>NEEDS ATTENTION <span class="metric-dot amber"></span></span><strong id="metric-attention">—</strong></div>
+            <div class="metric" title="Workspaces with recorded agent sessions"><span>WORKSPACES</span><strong id="metric-workspaces">—</strong></div>
+            <div class="metric metric-tools-running" title="Tools currently running in the selected workspace scope"><span>TOOLS RUNNING</span><strong id="metric-tools-running">—</strong></div>
+            <div class="metric metric-token-usage"><div class="metric-token-heading"><span>TOKENS</span><button class="token-help" type="button" popovertarget="token-explanation" aria-label="About token totals">?</button></div><dl id="metric-tokens" class="metric-token-values" aria-label="Observed token usage" data-token-hint="Cached input is included in input. Missing values are excluded."><div><dt>In</dt><dd id="metric-tokens-in">—</dd></div><div><dt>Cached</dt><dd id="metric-tokens-cache">—</dd></div><div><dt>Out</dt><dd id="metric-tokens-out">—</dd></div></dl></div>
+          </div>
+        </section>
+      </div>
+    </header>
+    <main class="dashboard-main">
+      <div id="app"></div>
+      <footer class="dashboard-footer" aria-label="Dashboard information">
+        <div class="footer-info"><span>agentobs</span><span><span class="local-dot"></span>Local · Observe only</span><span id="scan-status">Waiting for first scan</span></div>
+        <details id="source-details"><summary>Transcript sources</summary><ul id="sources"></ul></details>
+        <p class="footer-note">Observing transcript activity · running state is inferred</p>
+      </footer>
+    </main>
+  </div>
+  <dialog id="settings-dialog" class="settings-dialog" aria-labelledby="settings-title">
+    <form id="settings-form">
+      <div class="settings-heading"><div><span class="settings-kicker">CONFIGURATION</span><h2 id="settings-title">Settings</h2><p>Choose which workspaces and harness stores to observe.</p></div><button type="button" id="settings-close" class="settings-close" aria-label="Close settings">×</button></div>
+      <div id="settings-content" class="settings-content" aria-live="polite">Loading settings…</div>
+      <div class="settings-footer"><p id="settings-result" role="status"></p><button type="button" id="settings-cancel">Cancel</button><button type="submit" id="settings-save">Save settings</button></div>
+    </form>
+  </dialog>
+<div id="token-explanation" class="token-explanation" popover role="note"><strong>Token totals</strong><p>Cached input is included in In. Out counts generated tokens. Missing values are excluded.</p></div>
+</body>
+</html>

@@ -1,0 +1,80 @@
+name: Verify
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 4 * * 1'
+permissions:
+  contents: read
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run test:package
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:copilot
+        env:
+          AGENTOBS_SCREENSHOT_DIR: ${{ runner.temp }}/copilot
+      - run: npm run test:new-harnesses
+      - run: npm run test:settings
+      - run: npm run test:modern-transcript
+      - run: npm run test:sidebar
+      - run: npm run test:modern
+        env:
+          AGENTOBS_SCREENSHOT_DIR: ${{ runner.temp }}/modern
+      - run: npm run test:new-themes
+      - run: npm run test:modern-multi
+      - run: npm run test:modern-hierarchy
+      - run: npm run test:modern-zoom-reflow
+      - run: npm run test:modern-double-click
+      - run: npm run test:modern-large-cards
+      - run: npm run test:modern-completed-nodes
+      - run: npm run test:poll
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-artifacts
+          path: |
+            ${{ runner.temp }}/copilot
+            ${{ runner.temp }}/modern
+  appearance:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:themes
+        env:
+          AGENTOBS_SCREENSHOT_DIR: ${{ runner.temp }}/appearance
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: appearance-artifacts
+          path: ${{ runner.temp }}/appearance

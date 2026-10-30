@@ -1,0 +1,101 @@
+/* Graph status symbols retain their meaningful shapes across themes. */
+:root[data-dashboard-theme='rounded'] {
+  --panel-radius: 14px;
+  --control-radius: 9px;
+  --chip-radius: 999px;
+}
+:root[data-dashboard-theme='rounded'] :is(.agent:not(.modern-swarm-node), .modern-preview-card, .modern-run, .inspector, .workspace-menu, .theme-menu, .status-menu, .modern-customize .header-settings) {
+  border-radius: var(--panel-radius);
+}
+:root[data-dashboard-theme='rounded'] :is(.modern-agent:not(.modern-swarm-node):hover, .modern-run-toggle, .modern-completed-toggle, .modern-calls-toggle, .modern-call, .modern-call-button, .modern-nav-item, .modern-customize > summary, .workspace-trigger, .toolbar-button, input, select) {
+  border-radius: var(--control-radius);
+}
+:root[data-dashboard-theme='rounded'] :is(.modern-agent:not(.modern-swarm-node), .modern-agent:not(.modern-swarm-node):hover) { border-radius: var(--panel-radius); }
+:root[data-dashboard-theme='rounded'] :is(.modern-state, .modern-nav-count, .connection) { border-radius: var(--chip-radius); }
+:root[data-design='modern'][data-dashboard-theme] .connection { border-radius: var(--control-radius); }
+
+:root[data-dashboard-theme='chamfered'] :is(.modern-run, .inspector, .workspace-menu, .theme-menu, .status-menu, .modern-customize .header-settings, .modern-call, .modern-call-button, .modern-nav-item, .modern-nav-count, .modern-state, .modern-customize > summary, .modern-run-toggle, .modern-completed-toggle, .modern-calls-toggle, .modern-branch-toggle, .modern-preview-card, .token-help, #sources) {
+  border-radius: 0;
+}
+:root[data-dashboard-theme='chamfered'] :is(.modern-agent:not(.modern-swarm-node), .modern-agent:not(.modern-swarm-node):hover, .modern-preview-card) {
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+}
+:root[data-dashboard-theme='chamfered'] :is(.modern-run-toggle, .modern-completed-toggle, .modern-calls-toggle, .modern-branch-toggle, .modern-nav-item, .modern-customize > summary, .modern-nav-count, .modern-state) {
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
+:root[data-dashboard-theme='chamfered'] :is(.modern-run) { border-left: 2px solid var(--dashboard-accent); }
+
+/* Terminal uses square surfaces. Status and dense-graph symbols retain their
+   distinct shapes so their meaning remains legible in the overview. */
+:root[data-dashboard-theme='terminal'] {
+  --panel-radius: 0px;
+  --control-radius: 0px;
+  --chip-radius: 0px;
+}
+:root[data-dashboard-theme='terminal'] :is(
+  .agent:not(.modern-swarm-node),
+  .modern-agent:not(.modern-swarm-node):hover,
+  .modern-preview-card, .modern-run, .inspector,
+  .workspace-menu, .theme-menu, .status-menu, .modern-customize .header-settings,
+  .modern-call, .modern-call-button, .modern-nav-item, .modern-nav-count,
+  .modern-state, .modern-customize > summary, .modern-run-toggle,
+  .modern-completed-toggle, .modern-calls-toggle, .modern-branch-toggle,
+  .token-help, .metric, .empty, .token-stats > div, .connection, .status,
+  .tool-badge, .thinking-pill, .summary-pill,
+  .workspace-trigger, .workspace-button,
+  .theme-option, .toolbar-button, input, select, #sources
+) { border-radius: 0; }
+
+/* Flat: proportional type and crisp, uncut surfaces for dense workspaces. */
+:root[data-dashboard-theme='flat'] { --panel-radius: 0px; --control-radius: 0px; --chip-radius: 0px; }
+:root[data-design='modern'][data-dashboard-theme='flat'] :is(.modern-run, .modern-agent:not(.modern-swarm-node), .modern-preview-card, .modern-call, .modern-call-button, .modern-nav-item, .modern-run-toggle, .modern-completed-toggle, .modern-branch-toggle, .inspector, .theme-menu, .workspace-menu, .status-menu, .toolbar-button, input, select) {
+  border-radius: 0; clip-path: none; box-shadow: none;
+}
+:root[data-design='modern'][data-dashboard-theme='flat'] .modern-run-header { border-bottom: 2px solid var(--border); }
+:root[data-design='modern'][data-dashboard-theme='flat'] .modern-graph-header { background: var(--dashboard-sidebar); border-block: 1px solid var(--border); }
+:root[data-design='modern'][data-dashboard-theme='flat'] .modern-graph-viewport { background-image: none; }
+:root[data-design='modern'][data-dashboard-theme='flat'] .modern-agent:not(.modern-swarm-node) { border: 1px solid var(--border); border-left: 3px solid var(--modern-state-color, var(--dashboard-accent)); }
+:root[data-design='modern'][data-dashboard-theme='flat'] .modern-agent:is(.agent-working, .agent-tool) { --modern-state-color: var(--green); }
+:root[data-design='modern'][data-dashboard-theme='flat'] .modern-agent:is(.agent-input, .agent-starting) { --modern-state-color: var(--amber); }
+:root[data-design='modern'][data-dashboard-theme='flat'] .modern-agent:is(.agent-failed, .agent-interrupted) { --modern-state-color: var(--red); }
+:root[data-design='modern'][data-dashboard-theme='flat'] .modern-agent.selected { outline: 2px solid var(--dashboard-accent); outline-offset: 1px; }
+:root[data-design='modern'][data-dashboard-theme='flat'] .modern-nav-item.is-current { border-left: 3px solid var(--dashboard-accent); }
+
+/* Layered: recessed work areas and solid, raised surfaces with a visible edge. */
+:root[data-dashboard-theme='layered'] { --panel-radius: 12px; --control-radius: 6px; --chip-radius: 999px; }
+:root[data-design='modern'][data-dashboard-theme='layered'] :is(.modern-run, .modern-agent:not(.modern-swarm-node), .modern-preview-card, .inspector, .theme-menu, .workspace-menu, .status-menu) { border-radius: var(--panel-radius); }
+:root[data-design='modern'][data-dashboard-theme='layered'] :is(.modern-call, .modern-call-button, .modern-nav-item, .modern-run-toggle, .modern-completed-toggle, .toolbar-button, input, select) { border-radius: var(--control-radius); }
+:root[data-design='modern'][data-dashboard-theme='layered'] .modern-run { border: 1px solid var(--border); box-shadow: 0 4px 0 var(--border), 0 10px 24px #0003; }
+:root[data-design='modern'][data-dashboard-theme='layered'] .modern-run-header { background: var(--dashboard-card); box-shadow: inset 0 2px color-mix(in srgb, var(--vscode-foreground) 16%, transparent); }
+:root[data-design='modern'][data-dashboard-theme='layered'] .modern-graph-header { background: var(--dashboard-sidebar); border-bottom: 3px solid var(--border); }
+:root[data-design='modern'][data-dashboard-theme='layered'] .modern-graph-viewport { background-color: var(--dashboard-sidebar); background-image: linear-gradient(color-mix(in srgb, var(--dashboard-accent) 8%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--dashboard-accent) 8%, transparent) 1px, transparent 1px); background-size: 32px 32px; box-shadow: inset 0 6px 12px #0003; }
+:root[data-design='modern'][data-dashboard-theme='layered'] .modern-agent:not(.modern-swarm-node) { background: var(--dashboard-card); border-radius: 6px; box-shadow: 0 4px 0 var(--border), 0 7px 10px #0003, inset 0 1px color-mix(in srgb, var(--vscode-foreground) 18%, transparent); }
+:root[data-design='modern'][data-dashboard-theme='layered'] .modern-agent:not(.modern-swarm-node):hover { background: var(--dashboard-hover); }
+:root[data-design='modern'][data-dashboard-theme='layered'] .modern-agent:not(.modern-swarm-node).selected { background: var(--dashboard-selected); }
+:root[data-design='modern'][data-dashboard-theme='layered'] .modern-agent:not(.modern-swarm-node):is(:hover, .selected, :focus-visible) { box-shadow: 0 4px 0 var(--border), 0 9px 18px #0005, inset 0 1px color-mix(in srgb, var(--vscode-foreground) 18%, transparent); }
+:root[data-design='modern'][data-dashboard-theme='layered'] .modern-tools-panel { background: var(--dashboard-sidebar); border-top: 3px solid var(--border); }
+:root[data-design='modern'][data-dashboard-theme='layered'] .modern-call { background: var(--dashboard-card); box-shadow: 0 3px 0 var(--border); }
+:root[data-design='modern'][data-dashboard-theme='layered'] :is(.inspector, .theme-menu, .workspace-menu, .status-menu) { box-shadow: 0 12px 32px #0004; }
+
+/* Glass: keep the data layer opaque; translucent material is limited to overlays. */
+:root[data-dashboard-theme='glass'] { --panel-radius: 16px; --control-radius: 10px; --chip-radius: 999px; }
+:root[data-design='modern'][data-dashboard-theme='glass'] :is(.modern-run, .modern-agent:not(.modern-swarm-node), .modern-preview-card, .inspector, .theme-menu, .workspace-menu, .status-menu) { border-radius: var(--panel-radius); }
+:root[data-design='modern'][data-dashboard-theme='glass'] :is(.modern-call, .modern-call-button, .modern-nav-item, .modern-run-toggle, .modern-completed-toggle, .toolbar-button, input, select) { border-radius: var(--control-radius); }
+:root[data-design='modern'][data-dashboard-theme='glass'] .dashboard-header { background-image: linear-gradient(145deg, color-mix(in srgb, var(--dashboard-accent) 16%, transparent), transparent 48%); }
+:root[data-design='modern'][data-dashboard-theme='glass'] .modern-run { border-color: color-mix(in srgb, var(--dashboard-accent) 25%, var(--border)); }
+:root[data-design='modern'][data-dashboard-theme='glass'] .modern-run-header { background: linear-gradient(115deg, color-mix(in srgb, var(--dashboard-accent) 11%, var(--dashboard-card)), var(--dashboard-card) 65%); box-shadow: inset 0 1px color-mix(in srgb, var(--vscode-foreground) 16%, transparent); }
+:root[data-design='modern'][data-dashboard-theme='glass'] .modern-graph-header { background: linear-gradient(90deg, color-mix(in srgb, var(--dashboard-accent) 12%, var(--dashboard-card)), var(--dashboard-card)); }
+:root[data-design='modern'][data-dashboard-theme='glass'] .modern-agent:not(.modern-swarm-node) { background: var(--dashboard-card); box-shadow: inset 0 1px color-mix(in srgb, var(--vscode-foreground) 14%, transparent); }
+:root[data-design='modern'][data-dashboard-theme='glass'] .modern-agent:not(.modern-swarm-node):hover { background: var(--dashboard-hover); }
+:root[data-design='modern'][data-dashboard-theme='glass'] .modern-agent:not(.modern-swarm-node).selected { background: var(--dashboard-selected); }
+:root[data-design='modern'][data-dashboard-theme='glass'] :is(.inspector, .theme-menu, .workspace-menu, .status-menu) { background: var(--dashboard-card); box-shadow: 0 12px 32px #0004; }
+@supports (backdrop-filter: blur(12px)) {
+  :root[data-design='modern'][data-dashboard-theme='glass'] :is(.inspector, .theme-menu, .workspace-menu, .status-menu) {
+    background: color-mix(in srgb, var(--dashboard-card) 96%, transparent);
+    backdrop-filter: blur(12px);
+  }
+}
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  :root[data-design='modern'][data-dashboard-theme='glass'] :is(.inspector, .theme-menu, .workspace-menu, .status-menu) { background: var(--dashboard-card); backdrop-filter: none; }
+}

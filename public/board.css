@@ -1,0 +1,88 @@
+/* Layout follows each available content area, including inspector and lane widths. */
+.map-content { container-type: inline-size; container-name: workspace-board; }
+.workspace-board { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+.workspace-board > .agent-node, .compact .workspace-board > .agent-node { min-width: 0; margin: 0; }
+.workspace-board .agent-node { min-width: 0; }
+.node-row { container-type: inline-size; container-name: agent-card; }
+.node-row > .agent { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 0; }
+.node-row .card-top, .node-row .card-identity, .node-row .phase, .node-row .progress { min-width: 0; }
+.node-row .card-top { align-items: start; }
+.node-row .task-title { font-size: clamp(14px, .75vw, 16px); max-width: 72ch; }
+.compact .node-row .task-title { font-size: 13px; }
+.node-row .card-identity { font-size: 11px; justify-content: start; }
+.node-row .progress { font-size: 12px; max-width: 80ch; color: var(--vscode-foreground); }
+.card-stats { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; min-width: 0; }
+.card-stats .token-summary { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 0; }
+.card-token { display: inline-flex; align-items: baseline; gap: 4px; white-space: nowrap; }
+.card-token strong { font: 500 13px ui-monospace, monospace; }
+.card-token small { font: 10px ui-monospace, monospace; color: var(--muted); }
+.card-stats .elapsed { font-size: 11px; }
+.node-row .card-stats { color: var(--muted); }
+.node-row .card-token strong { font-size: 11px; }
+.history-family { margin: 0; padding: 0; list-style: none; }
+@container workspace-board (min-width: 900px) {
+  .workspace-board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container workspace-board (min-width: 1600px) {
+  .workspace-board { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+/* Compact history stays readable without allocating a whole live card per run. */
+.history-entry + .history-entry { border-top: 1px solid var(--border); }
+.history-run > summary { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto auto; align-items: center; gap: 14px; padding: 12px 8px; list-style: none; }
+.history-run > summary::-webkit-details-marker { display: none; }
+.history-run > summary:hover { background: var(--dashboard-hover); }
+.history-title { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; }
+.history-title::before { content: '▸'; color: var(--muted); margin-right: 8px; }
+.history-run[open] > summary .history-title::before { content: '▾'; }
+.history-workspace { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--muted); font-size: 11px; }
+.history-tokens { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 4px 10px; min-width: 0; font: 11px ui-monospace, monospace; color: var(--muted); text-align: right; }
+.history-token-total { color: var(--vscode-foreground); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.history-token-breakdown { white-space: nowrap; }
+.history-family { padding: 4px 8px 18px; }
+.history-family > .agent-node { max-width: 900px; }
+.overview .metric-grid { max-width: 1200px; }
+.toolbar .run-control { flex: 0 1 360px; }
+.toolbar .search-control { flex: 1 1 240px; max-width: 620px; }
+/* Keep activity context and filters together instead of reserving a row each. */
+.activity-controls { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'heading summary' 'queue queue' 'filters filters'; align-items: center; gap: 8px 12px; padding: 10px 0; margin-bottom: 14px; border-bottom: 1px solid var(--border); min-width: 0; }
+.activity-controls > .heading { grid-area: heading; padding: 0; }
+.activity-controls > .heading h2 { font-size: 12px; letter-spacing: 0; }
+.activity-controls > .summary { grid-area: summary; margin: 0; gap: 5px; }
+.activity-controls > .attention-queue { grid-area: queue; }
+.attention-queue { border: 1px solid color-mix(in srgb, var(--amber) 45%, var(--border)); border-radius: var(--control-radius); padding: 6px 10px; color: var(--vscode-foreground); background: var(--dashboard-card); }
+.attention-queue summary { cursor: pointer; color: var(--amber); font-weight: 600; }
+.attention-list { list-style: none; margin: 6px 0 0; padding: 0; }
+.attention-list li { display: flex; gap: 12px; align-items: baseline; padding: 4px 0; }
+.attention-agent { border: 0; background: transparent; color: var(--dashboard-accent); padding: 3px 0; text-align: left; cursor: pointer; }
+.attention-agent:hover { text-decoration: underline; }
+.activity-controls > .toolbar { grid-area: filters; border: 0; padding: 0; margin: 0; }
+.activity-controls .toolbar .search-control { max-width: none; }
+.footer-info > .version { margin-left: auto; font-size: 9px; }
+@media (min-width: 1800px) {
+  .header-inner { grid-template-columns: 190px 120px minmax(600px, 1fr) auto; grid-template-areas: 'brand brand overview controls' 'workspaces activity activity activity'; gap: 6px 16px; padding-block: 6px; }
+  .header-identity { display: contents; }
+  .overview { padding: 0; border: 0; }
+  .overview .metric-grid { display: flex; align-items: center; gap: 0; max-width: none; }
+  .overview .metric { display: flex; gap: 8px; padding: 3px 10px; min-height: 32px; background: transparent; border: 0; border-right: 1px solid var(--border); border-radius: 0; }
+  .overview .metric > span { white-space: nowrap; }
+  .overview .metric strong { font-size: 18px; }
+  .overview .metric-token-usage { container-type: normal; flex: 0 0 auto; min-width: 0; border: 0; }
+  .overview .metric-token-values { flex: 1; }
+  .overview .metric-token-values dd { font-size: 18px; }
+  .workspace-trigger { min-height: 40px; padding-block: 4px; }
+  .workspace-trigger-stats { margin-top: 0; }
+  .header-inner > .activity-controls { grid-area: activity; display: flex; gap: 12px; padding: 0; border: 0; margin: 0; }
+  .activity-controls > .heading { flex-shrink: 0; }
+  .activity-controls > .summary { flex: 0 1 auto; max-width: 320px; }
+  .activity-controls > .toolbar { flex: 1; min-width: 0; flex-wrap: nowrap; }
+  .activity-controls .toolbar .run-control { flex: 0 1 250px; }
+  .activity-controls .toolbar .search-control { flex: 1 1 200px; }
+}
+@media (max-width: 760px) {
+  .history-run > summary { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; }
+  .history-title { grid-column: 1; }
+  .history-workspace { grid-column: 1; grid-row: 2; }
+  .history-tokens { grid-column: 1 / -1; grid-row: 3; font-size: 10px; }
+  .history-run > summary > .elapsed { grid-column: 2; grid-row: 1; }
+  .card-stats .elapsed { font-size: 10px; }
+}
