@@ -10,8 +10,6 @@ permissions:
 jobs:
   node:
     runs-on: ${{ matrix.os }}
-    env:
-      TMPDIR: ${{ runner.temp }}
     strategy:
       fail-fast: false
       matrix:
@@ -25,6 +23,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+        env:
+          TMPDIR: ${{ runner.temp }}
       - run: npm run test:package
   browser:
     runs-on: ubuntu-latest
