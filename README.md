@@ -10,7 +10,7 @@ A local dashboard for seeing what your coding agents are doing—together.
 
 agentobs brings coding sessions from **Codex, VS Code Copilot, Claude Code, and OpenCode** into one workspace. Follow delegation, inspect running tools, track tokens, and find agents that need attention without switching between terminals.
 
-<a href="docs/assets/agent-network.png?raw=1"><img src="docs/assets/agent-network.png" width="800" alt="agentobs showing a simulated agent workspace with its delegation graph and tool activity"></a>
+<a href="https://raw.githubusercontent.com/schelmi1/agentobs-dash/refs/heads/main/docs/assets/agent-network.png"><img src="docs/assets/agent-network.png" width="800" alt="agentobs showing a simulated agent workspace with its delegation graph and tool activity"></a>
 
 > The screenshots and animations on this page use **synthetic simulation data**. No agent commands are executed by the simulation.
 
@@ -24,22 +24,22 @@ The card view shows the coordinator, its delegated agents, and their nested
 subagents as a connected hierarchy. Each card keeps its current task, activity,
 and token usage in view; the tool activity strip shows recent work across the run.
 
-<a href="docs/assets/delegation-cards.png?raw=1"><img src="docs/assets/delegation-cards.png" width="800" alt="Card view showing a coordinator, delegated agents, and nested subagents"></a>
+<a href="https://raw.githubusercontent.com/schelmi1/agentobs-dash/refs/heads/main/docs/assets/delegation-cards.png"><img src="docs/assets/delegation-cards.png" width="800" alt="Card view showing a coordinator, delegated agents, and nested subagents"></a>
 
 ### Follow the swarm
 
 Compact mode turns an agent network into a living graph. Nodes are colored by tool activity; connections and clusters show who delegated to whom. Hover or focus a node to see its details, or open it for its full history.
 
-<a href="docs/assets/compact-swarm.gif?raw=1"><img src="docs/assets/compact-swarm.gif" width="800" alt="Animated simulation of agents fanning out into a compact network"></a>
+<a href="https://raw.githubusercontent.com/schelmi1/agentobs-dash/refs/heads/main/docs/assets/compact-swarm.gif"><img src="docs/assets/compact-swarm.gif" width="800" alt="Animated simulation of agents fanning out into a compact network"></a>
 
 <details>
 <summary>View the Compact network as a still image</summary>
 
-<a href="docs/assets/compact-network.png?raw=1"><img src="docs/assets/compact-network.png" width="800" alt="Compact network showing a simulated hierarchy of 145 agents"></a>
+<a href="https://raw.githubusercontent.com/schelmi1/agentobs-dash/refs/heads/main/docs/assets/compact-network.png"><img src="docs/assets/compact-network.png" width="800" alt="Compact network showing a simulated hierarchy of 145 agents"></a>
 
 </details>
 
-<a href="docs/assets/compact-details.gif?raw=1"><img src="docs/assets/compact-details.gif" width="800" alt="Animated demonstration of revealing agent details in compact mode"></a>
+<a href="https://raw.githubusercontent.com/schelmi1/agentobs-dash/refs/heads/main/docs/assets/compact-details.gif"><img src="docs/assets/compact-details.gif" width="800" alt="Animated demonstration of revealing agent details in compact mode"></a>
 
 Switch back to cards when you need more context. Arrange workspaces in a **row, column, or grid**, resize them, filter completed nodes per workspace, and use Fit to find your way back. Drag a box to zoom, hold **Alt** and scroll to zoom around the pointer, or middle-drag to pan.
 
@@ -47,7 +47,7 @@ Switch back to cards when you need more context. Arrange workspaces in a **row, 
 
 Follow four projects at once in a grid. This synthetic example shows Codex, Claude Code, OpenCode, and VS Code Copilot workspaces with different delegation patterns and tool activity.
 
-<a href="docs/assets/multi-project-grid.gif?raw=1"><img src="docs/assets/multi-project-grid.gif" width="800" alt="Animated simulation of four harnesses in a grid, each with a different agent delegation pattern"></a>
+<a href="https://raw.githubusercontent.com/schelmi1/agentobs-dash/refs/heads/main/docs/assets/multi-project-grid.gif"><img src="docs/assets/multi-project-grid.gif" width="800" alt="Animated simulation of four harnesses in a grid, each with a different agent delegation pattern"></a>
 
 ## What you can see
 
