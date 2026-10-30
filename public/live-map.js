@@ -458,9 +458,17 @@
       }
       heading.append(totals);
       const runInfo = element('div', 'modern-run-info');
-      if (historyGroup) runInfo.append(element('span', 'modern-history-state', historyGroup === 'completed' ? 'Completed' : historyGroup === 'inactive' ? 'Inactive' : 'Quiet'));
+      if (historyGroup) runInfo.append(element('span', 'modern-history-state', root.manuallyCompleted ? 'Moved to history' : historyGroup === 'completed' ? 'Completed' : historyGroup === 'inactive' ? 'Inactive' : 'Quiet'));
       runInfo.append(element('span', 'modern-run-count', family.length + ' agent' + (family.length === 1 ? '' : 's')),
-        element('span', needsAttention ? 'modern-attention' : 'modern-clear', needsAttention ? needsAttention + ' need attention' : 'No attention needed'));
+        element('span', needsAttention ? 'modern-attention' : 'modern-clear', root.manuallyCompleted ? 'Attention deferred' : needsAttention ? needsAttention + ' need attention' : 'No attention needed'));
+      if (root.manuallyCompleted) {
+        const restore = button('Restore', 'toolbar-button modern-restore-run', () => host.postMessage({ command: 'restoreAttentionWorkspace', runKey: root.id }));
+        restore.setAttribute('aria-label', 'Restore workspace ' + root.title); restore.title = 'Return this workspace to its observed state'; runInfo.append(restore);
+      } else if (!historyGroup && needsAttention) {
+        const archive = button('Move to completed', 'toolbar-button modern-archive-run', () => host.postMessage({ command: 'archiveAttentionWorkspace', runKey: root.id }));
+        archive.setAttribute('aria-label', 'Move workspace ' + root.title + ' to completed history');
+        archive.title = 'Move this workspace to completed history until it has new activity'; runInfo.append(archive);
+      }
       const runCollapsed = modernRunsCollapsed.has(root.id);
       const runToggle = button(runCollapsed ? 'Open run ▾' : 'Collapse run ▴', 'modern-run-toggle', () => {
         if (runCollapsed) modernRunsCollapsed.delete(root.id); else modernRunsCollapsed.add(root.id);

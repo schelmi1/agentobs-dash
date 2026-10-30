@@ -15,7 +15,7 @@ async function main() {
     const instances = [];
     for (const label of ['Alpha', 'Beta']) {
       const root = path.join(base, label); await fs.mkdir(root);
-      let generation = 0, onlyHistory = false;
+      let generation = 0, onlyHistory = false, resumed = false;
       const now = Date.now();
       const make = (id, currentTask, extra = {}) => ({ id, currentTask, cwd: root, provider: 'fixture', providerLabel: 'Codex', status: 'active', hasLifecycle: true, lastActivity: new Date(now).toISOString(), ...extra });
       const adapter = { id: 'fixture', async scan() {
@@ -24,7 +24,7 @@ async function main() {
           const id = label + '-run-' + run;
           const history = Array.from({ length: 5 }, (_, i) => ({ id: 'finished-' + i, name: 'exec_command', label: 'Exec · git', status: 'completed', timestamp: new Date(now + i * 1000).toISOString(), completedAt: new Date(now + i * 1000).toISOString() }));
           sessions.push(make(id, label + ' mission ' + run, { agentName: 'Coordinator ' + run, toolHistory: run === 0 ? history : [] }));
-          for (let child = 0; child < 6; child++) sessions.push(make(id + '-child-' + child, label + ' specialist task ' + run + '-' + child, { parentId: id, agentName: 'Specialist ' + child, ...(run === 2 && child === 5 ? { cwd: path.join(root, 'nested') } : {}), needsInput: run === 1 && child === 5, currentTool: { id: 'running-' + child, name: 'exec_command', label: 'Exec · ' + ['npm', 'rg', 'node', 'git', 'python', 'ls'][child], status: 'in_progress', startedAt: new Date(now - 60000 - child * 1000).toISOString() }, ...(child === 1 && run === 0 ? { toolHistory: Array.from({ length: 5 }, (_, i) => ({ id: 'read-' + i, name: 'read', label: 'Read ' + i, status: 'completed', timestamp: new Date(now - 30000 - i * 1000).toISOString() })) } : {}) }));
+          for (let child = 0; child < 6; child++) sessions.push(make(id + '-child-' + child, label + ' specialist task ' + run + '-' + child, { parentId: id, agentName: 'Specialist ' + child, ...(resumed && run === 1 && child === 5 ? { lastActivity: new Date(now + 1000).toISOString() } : {}), ...(run === 2 && child === 5 ? { cwd: path.join(root, 'nested') } : {}), needsInput: run === 1 && child === 5, currentTool: { id: 'running-' + child, name: 'exec_command', label: 'Exec · ' + ['npm', 'rg', 'node', 'git', 'python', 'ls'][child], status: 'in_progress', startedAt: new Date(now - 60000 - child * 1000).toISOString() }, ...(child === 1 && run === 0 ? { toolHistory: Array.from({ length: 5 }, (_, i) => ({ id: 'read-' + i, name: 'read', label: 'Read ' + i, status: 'completed', timestamp: new Date(now - 30000 - i * 1000).toISOString() })) } : {}) }));
           sessions.push(make(id + '-nested', label + ' nested review ' + run, { parentId: id + '-child-0', agentName: 'Reviewer', currentTool: { id: 'unknown', name: 'search', label: 'Search', status: 'unknown' }, toolHistory: [{ id: 'error', name: 'exec_command', label: 'Exec · npm', status: 'failed', timestamp: new Date(now - 120000).toISOString() }] }));
         }
         sessions.push(make(label + '-past', label + ' completed investigation', { status: 'completed' }));
@@ -36,7 +36,7 @@ async function main() {
       } };
       const config = { ...defaults, rootFolder: root, port: 0, pollIntervalMs: 150 };
       const dashboard = createDashboard(config, { observer: new Observer(config, [adapter]) }); dashboards.push(dashboard);
-      instances.push({ label, url: await dashboard.start(), setGeneration(value) { generation = value; }, showOnlyHistory() { onlyHistory = true; } });
+      instances.push({ label, url: await dashboard.start(), setGeneration(value) { generation = value; }, resumeAttention() { resumed = true; }, showOnlyHistory() { onlyHistory = true; } });
     }
     browser = await chromium.launch({ ...(process.env.CHROME_BIN ? { executablePath: process.env.CHROME_BIN } : {}), headless: true, args: ['--no-sandbox'] });
     const contexts = await Promise.all(instances.map(() => browser.newContext({ viewport: { width: 1440, height: 900 } })));
@@ -46,8 +46,27 @@ async function main() {
       await page.goto(instances[i].url); await page.waitForSelector('.agent');
       await page.waitForSelector('.modern-run');
       assert.equal(await page.locator('.modern-run').count(), 3);
+      assert.equal(await page.locator('#metric-workspaces').innerText(), '3', 'active workspaces count separate runs even in one directory');
+      assert.equal(await page.locator('#metric-workspaces').isVisible(), true, 'active workspace count is visible');
       assert.equal(await page.locator('.modern-agent').count(), 24);
       assert.equal(await page.locator('.modern-links path').count(), 21);
+      const attentionRun = page.locator('.modern-run').filter({ hasText: instances[i].label + ' mission 1' });
+      await attentionRun.getByRole('button', { name: /Move workspace .* to completed history/ }).click();
+      assert.equal(await page.locator('#metric-workspaces').innerText(), '2', 'manually moved workspace is removed from the active count');
+      await page.locator('.completed-history > summary').click();
+      let moved = page.locator('.completed-history .modern-run').filter({ hasText: instances[i].label + ' mission 1' });
+      assert.equal(await moved.locator('.modern-history-state').innerText(), 'Moved to history');
+      await page.reload(); await page.waitForSelector('.modern-run');
+      await page.locator('.completed-history > summary').click();
+      moved = page.locator('.completed-history .modern-run').filter({ hasText: instances[i].label + ' mission 1' });
+      await moved.getByRole('button', { name: /Restore workspace/ }).click();
+      assert.equal(await page.locator('#metric-workspaces').innerText(), '3', 'restore returns the workspace to the live area');
+      await attentionRun.getByRole('button', { name: /Move workspace .* to completed history/ }).click();
+      instances[i].resumeAttention();
+      await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+      await page.waitForFunction(() => document.querySelector('#metric-workspaces').textContent === '3', null, { timeout: 10000 });
+      assert.equal(await attentionRun.count(), 1, 'new agent activity restores the workspace automatically');
+      if (await page.locator('.completed-history').evaluate(node => node.open)) await page.locator('.completed-history > summary').click();
       const wideRun = page.locator('.modern-run').first();
       const sibling0 = await wideRun.locator('.modern-agent', { hasText: instances[i].label + ' specialist task 0-0' }).boundingBox();
       const sibling1 = await wideRun.locator('.modern-agent', { hasText: instances[i].label + ' specialist task 0-1' }).boundingBox();
@@ -58,6 +77,7 @@ async function main() {
       await page.getByRole('button', { name: 'Choose workspace' }).click();
       await page.locator('#workspace-menu [data-workspace]').filter({ hasText: 'nested' }).click();
       assert.equal(await page.locator('#metric-tools-running').innerText(), '1', 'running tools count only actual members of the selected workspace');
+      assert.equal(await page.locator('#metric-workspaces').innerText(), '1', 'active workspaces follow the selected scope');
       await page.getByRole('button', { name: 'Choose workspace' }).click();
       await page.locator('#workspace-menu [data-workspace=""]').click();
       assert.equal(await page.locator('#metric-tools-running').innerText(), '18', 'returning to all workspaces restores the full count');
@@ -208,6 +228,7 @@ async function main() {
     if (!await pages[1].locator('.completed-history').evaluate(node => node.open)) await pages[1].locator('.completed-history > summary').click();
     await pages[1].locator('.completed-history .modern-run').waitFor();
     assert.equal(await pages[1].locator('.completed-history .modern-run').count(), 1, 'completed workspaces remain available without live runs');
+    assert.equal(await pages[1].locator('#metric-workspaces').innerText(), '0', 'completed workspaces are not active');
     assert.equal(await pages[1].getByRole('group', { name: 'Arrange Modern workspaces' }).count(), 1, 'history-only view offers arrangement controls');
     if (!await pages[1].locator('.inactive-history').evaluate(node => node.open)) await pages[1].locator('.inactive-history > summary').click();
     assert.equal(await pages[1].getByRole('group', { name: 'Arrange Modern workspaces' }).count(), 1, 'multiple history groups share arrangement controls');

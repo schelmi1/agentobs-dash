@@ -253,7 +253,6 @@
   :root[data-design='modern'] .metric-grid { display: grid; grid-template-columns: 1fr; gap: 9px; }
   :root[data-design='modern'] .dashboard-header .metric, :root[data-design='modern'] .dashboard-header .metric:first-child { display: flex; flex-direction: row; align-items: center; justify-content: space-between; min-height: 0; padding: 0; border: 0; background: transparent; }
   :root[data-design='modern'][data-dashboard-theme='chamfered'] .dashboard-header .metric { clip-path: none; }
-  :root[data-design='modern'] .dashboard-header .metric:nth-child(3) { display: none; }
   :root[data-design='modern'] .dashboard-header .metric > span { font-size: 10px; letter-spacing: .02em; }
   :root[data-design='modern'] .dashboard-header .metric strong { font-size: 14px; font-weight: 650; }
   :root[data-design='modern'] .dashboard-header .metric-token-usage { display: grid; gap: 7px; padding-top: 7px; border-top: 1px solid var(--border); }

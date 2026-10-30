@@ -74,9 +74,26 @@
   };
   workspacePicker.onfocusout = event => { if (!workspacePicker.contains(event.relatedTarget)) setWorkspaceMenu(false); };
   document.addEventListener('pointerdown', event => { if (!workspacePicker.contains(event.target)) setWorkspaceMenu(false); });
+  // A manual move is a presentation choice, scoped to this browser. Any new
+  // activity in the run invalidates it so a resumed agent becomes visible again.
+  const activitySignature = root => {
+    const entries = window.agentobsSelectors.flatten([root]).map(agent => [agent.id, agent.lastActivity || '']).sort((a, b) => a[0].localeCompare(b[0]));
+    const value = JSON.stringify(entries); let a = 2166136261, b = 0x9e3779b9;
+    for (let i = 0; i < value.length; i++) { a = Math.imul(a ^ value.charCodeAt(i), 16777619); b = Math.imul(b ^ value.charCodeAt(i), 2246822519); }
+    return (a >>> 0).toString(16) + ':' + (b >>> 0).toString(16);
+  };
+  const manuallyArchive = node => ({ ...node, archived: true, historyGroup: 'completed', needsAttention: false, layoutHeld: false, children: node.children.map(manuallyArchive) });
   const emit = (selectionOnly = false) => {
     if (!model || !ready) return;
-    const { forest, memberIds, contextIds } = window.agentobsSelectors.projectWorkspace(model.forest, workspace);
+    let changed = false;
+    const presented = model.forest.map(root => {
+      const signature = saved.manuallyCompleted[root.id];
+      if (!signature) return root;
+      if (activitySignature(root) !== signature) { delete saved.manuallyCompleted[root.id]; changed = true; return root; }
+      return { ...manuallyArchive(root), manuallyCompleted: true };
+    });
+    if (changed) persist();
+    const { forest, memberIds, contextIds } = window.agentobsSelectors.projectWorkspace(presented, workspace);
     const agents = Object.create(null);
     const visit = node => { agents[node.id] = node; node.children.forEach(visit); };
     forest.forEach(visit);
@@ -85,14 +102,14 @@
       type: 'render', selectionSource: 'map', selectionOnly,
       model: { ...model, forest, agents, scopeMemberIds: memberIds, scopeContextIds: contextIds, runs: model.runs.filter(run => forest.some(root => root.id === run.id)), selectedAgentKey: selected, compactDensity: compact }
     } }));
-    renderOverview([...memberIds].map(id => agents[id]));
+    renderOverview([...memberIds].map(id => agents[id]), forest);
   };
-  const renderOverview = agents => {
+  const renderOverview = (agents, forest) => {
     $('metric-tokens').dataset.tokenHint = 'Cached input is included in input. Missing values are excluded.';
     const live = agents.filter(agent => ['working', 'tool', 'starting'].includes(agent.displayState) && !agent.archived).length;
     text('metric-live', live);
     text('metric-attention', agents.filter(agent => agent.needsAttention).length);
-    text('metric-workspaces', new Set(agents.map(agent => agent.cwd)).size);
+    text('metric-workspaces', forest.filter(window.agentobsSelectors.hasLive).length);
     text('metric-tools-running', agents.filter(agent => agent.currentTool?.status === 'in_progress' && !agent.observationStale).length);
     for (const [field, id, label] of [['input', 'in', 'Input'], ['cachedInput', 'cache', 'Cached input'], ['output', 'out', 'Output']]) {
       const counts = agents.map(agent => agent.tokenUsage?.[field]).filter(Number.isFinite);
@@ -217,6 +234,13 @@
           if (!observationError && lastReceived !== undefined && performance.now() - lastReceived > Math.max(10000, (model?.pollIntervalMs || 2000) * 3)) connection('Stale', 'No new observer snapshot has arrived. Showing the last snapshot; activity may be out of date. Code: SNAPSHOT_EXPIRED');
         }, 1000);
         source.onerror = () => connection('Reconnecting', 'Connection interrupted. Showing the last snapshot; reconnecting automatically.');
+      } else if (message.command === 'archiveAttentionWorkspace') {
+        const root = model?.forest.find(item => item.id === message.runKey);
+        if (root && window.agentobsSelectors.flatten([root]).some(agent => agent.needsAttention && !agent.archived)) {
+          saved.manuallyCompleted[root.id] = activitySignature(root); persist(); emit();
+        }
+      } else if (message.command === 'restoreAttentionWorkspace') {
+        delete saved.manuallyCompleted[message.runKey]; persist(); emit();
       } else if (message.command === 'refresh') refresh();
       else if (message.command === 'selectAgent') { selected = message.agentKey; emit(true); }
       else if (message.command === 'closeInspector') { selected = undefined; emit(true); }
