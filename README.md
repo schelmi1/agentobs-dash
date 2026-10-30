@@ -64,29 +64,29 @@ Activity is inferred from recorded harness data. An open terminal alone does not
 
 **Requirements:** Node.js 22+, npm, and a supported coding harness with local session data.
 
-> The npm release is being prepared. The examples below assume the planned package name `agentobs`; they will work after that package is published. Until then, use the source instructions under [Development](#development).
+> The npm release is being prepared. The examples below assume the planned package name `agentobs-dash`; they will work after that package is published. Until then, use the source instructions under [Development](#development).
 
 From a project directory, start agentobs with:
 
 ```bash
-npx agentobs
+npx agentobs-dash
 ```
 
 Open **[http://127.0.0.1:4317](http://127.0.0.1:4317)**. agentobs monitors the current directory and its subdirectories. To see several projects at once, run it from their parent directory or specify a root:
 
 ```bash
-npx agentobs --root /path/to/your/projects
+npx agentobs-dash --root /path/to/your/projects
 ```
 
-The CLI prints the dashboard address and discovered store paths. Leave it running while you observe your agents; press `Ctrl+C` to stop it. If the port is in use, start with `npx agentobs --port 4318`.
+The CLI prints the dashboard address and discovered store paths. Leave it running while you observe your agents; press `Ctrl+C` to stop it. If the port is in use, start with `npx agentobs-dash --port 4318`.
 
 No setup file is required. You can optionally save configuration for a directory:
 
 ```bash
-npx agentobs init /path/to/your/projects
+npx agentobs-dash init /path/to/your/projects
 ```
 
-This creates `.agentobs/dashboard.json` without overwriting an existing file. Start again with `npx agentobs --root /path/to/your/projects`. Run `npx agentobs --help` for the available options.
+This creates `.agentobs/dashboard.json` without overwriting an existing file. Start again with `npx agentobs-dash --root /path/to/your/projects`. Run `npx agentobs-dash --help` for the available options.
 
 ## Harnesses and discovery
 
@@ -104,7 +104,7 @@ Open **Settings** in the sidebar to inspect resolved paths, add custom paths, or
 You can also provide custom stores directly. Each option may be repeated:
 
 ```bash
-npx agentobs --root /path/to/projects \
+npx agentobs-dash --root /path/to/projects \
   --sessions /path/to/codex/sessions \
   --opencode-storage /path/to/opencode.db
 ```
@@ -155,7 +155,7 @@ npm run test:new-harnesses
 npm run test:package
 ```
 
-Browser tests use Playwright Chromium; set `CHROME_BIN` to use a different executable. They need local loopback access. See [architecture](ARCHITECTURE.md) for implementation details.
+Browser tests use Playwright Chromium; set `CHROME_BIN` to use a different executable. They need local loopback access.
 
 ## License
 

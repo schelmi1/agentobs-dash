@@ -1054,6 +1054,10 @@
       renderContent(); return;
     }
     version.textContent = 'v' + state.version;
+    const brand = document.querySelector('.brand');
+    const brandVersion = document.querySelector('.brand-version');
+    if (brandVersion) brandVersion.textContent = state.version;
+    if (brand) brand.setAttribute('aria-label', 'agentobs home, version ' + state.version);
     renderContent();
     if (selectionChanged || (wasArchived === false && state.agents[ui.selected]?.archived)) revealSelectedDetails();
   });

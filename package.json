@@ -1,8 +1,7 @@
 {
   "name": "agentobs-dash",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A local dashboard for observing coding agents across projects.",
-  "private": true,
   "license": "MIT",
   "files": [
     "bin",
@@ -10,7 +9,6 @@
     "public",
     "docs/assets",
     "README.md",
-    "ARCHITECTURE.md",
     "LICENSE"
   ],
   "engines": {
@@ -53,5 +51,13 @@
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/schelmi1/agentobs-dash.git"
+  },
+  "homepage": "https://github.com/schelmi1/agentobs-dash#readme",
+  "bugs": {
+    "url": "https://github.com/schelmi1/agentobs-dash/issues"
   }
 }

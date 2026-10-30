@@ -14,13 +14,20 @@ async function main() {
     child.stdout.on('data', data => { output += data; }); child.stderr.on('data', data => { output += data; });
     child.on('error', reject); child.on('exit', code => code ? reject(new Error(output)) : resolve(output));
   });
+  // npm exposes its JS entry point when this script is run through npm.
+  // Calling it with Node also works on Windows, where npm is a .cmd file.
+  const npm = (args) => process.env.npm_execpath
+    ? run(process.execPath, [process.env.npm_execpath, ...args])
+    : run(process.platform === 'win32' ? 'npm.cmd' : 'npm', args);
   let server;
   try {
-    await run('npm', ['pack', '--ignore-scripts', '--pack-destination', root]);
+    await npm(['pack', '--ignore-scripts', '--pack-destination', root]);
     const archive = (await fs.readdir(root)).find(file => file.endsWith('.tgz'));
     const installation = path.join(root, 'installation');
-    await run('npm', ['install', '--offline', '--ignore-scripts', '--omit=dev', '--no-audit', '--no-fund', '--prefix', installation, path.join(root, archive)]);
+    await npm(['install', '--omit=dev', '--no-audit', '--no-fund', '--prefix', installation, path.join(root, archive)]);
     const installed = path.join(installation, 'node_modules', 'agentobs-dash'), cli = path.join(installed, 'bin', 'agentobs.js');
+    // Loading the native module alone does not load its binding; open a database.
+    await run(process.execPath, ['-e', "const Database = require(require.resolve('better-sqlite3', { paths: [process.argv[1]] })); const db = new Database(':memory:'); if (db.prepare('select 1 as value').get().value !== 1) process.exit(1); db.close();", installed], root);
     await assert.rejects(fs.access(path.join(installed, 'test')));
     await assert.rejects(fs.access(path.join(installed, '.agentobs')));
     assert.match(await run(process.execPath, [cli, '--help'], root), /Harnesses: Codex, Copilot/);
@@ -36,7 +43,7 @@ async function main() {
     const response = await fetch(url + '/api/snapshot'); assert.equal(response.status, 200);
     const wire = await response.json(); assert.equal(wire.protocolVersion, 2); assert.deepEqual(wire.roots, []);
     for (const asset of ['/', '/board.css', '/modern.css', '/theme-shapes.css', '/color-themes/index.js', '/status.js', '/settings.js', '/settings.css', '/preferences.js', '/snapshot.js', '/agent-views.js', '/inspector.js']) assert.equal((await fetch(url + asset)).status, 200);
-    console.log('Package smoke test passed: offline production install, init, CLI start and HTTP assets.');
+    console.log('Package smoke test passed: production install, SQLite, init, CLI start and HTTP assets.');
   } finally {
     if (server && server.exitCode === null) { const exited = new Promise(resolve => server.once('exit', resolve)); server.kill('SIGTERM'); await exited; }
     await fs.rm(root, { recursive: true, force: true });
