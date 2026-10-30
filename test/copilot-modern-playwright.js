@@ -37,6 +37,17 @@ async function main() {
     await page.setViewportSize({ width: 390, height: 900 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     if (process.env.AGENTOBS_SCREENSHOT_DIR) { await fs.mkdir(process.env.AGENTOBS_SCREENSHOT_DIR, { recursive: true }); await page.screenshot({ path: path.join(process.env.AGENTOBS_SCREENSHOT_DIR, 'copilot-modern.png'), fullPage: true }); }
+    const progress = await page.evaluate(() => {
+      const status = window.agentobsStatus.createStatus(document);
+      status.update({ state: 'Live', loading: true, filesRemaining: 3, fileProgress: { bytesRead: 250, bytesTotal: 1000 } });
+      const trigger = document.querySelector('#status-trigger'), bar = trigger.querySelector('.status-loading-track span');
+      return { count: document.querySelector('#status-loading-count').textContent, description: document.querySelector('#connection').textContent, mode: trigger.dataset.progress, width: trigger.style.getPropertyValue('--loading-progress'), animation: getComputedStyle(bar).animationName };
+    });
+    assert.equal(progress.count, '· 3 left');
+    assert.match(progress.description, /Copilot transcripts: 25%.*3 files remaining/);
+    assert.equal(progress.mode, 'determinate');
+    assert.equal(progress.width, '25%');
+    assert.equal(progress.animation, 'none');
     assert.deepEqual(errors, []);
     console.log('PASS Copilot agent network, live tools and token updates, privacy, and phone layout');
   } finally { await browser?.close(); await dashboard.close(); await fs.rm(root, { recursive: true, force: true }); }

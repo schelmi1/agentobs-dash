@@ -435,3 +435,35 @@ test('a changed checkpoint boundary triggers a full safe replay', async t => {
   await fs.writeFile(file,'{"n":2}\n'.repeat(2000)+'{"n":3}\n');const second=createIngestion({},opts);await second.loadIndex();
   const value=await second.read(file,factory);assert.equal(value.value.total,4003);assert.ok(second.stats.readBytes>(await fs.stat(file)).size);
 });
+
+test('bounded Copilot summary eviction does not cause perpetual loading', async t => {
+  const {createIngestion}=require('../lib/ingestion');
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'agentobs-cache-thrash-')); t.after(()=>fs.rm(root,{recursive:true,force:true}));
+  const files=Array.from({length:10},(_,i)=>path.join(root,`${i}.jsonl`));
+  for(const file of files) await fs.writeFile(file,'{"x":1}\n'.repeat(500));
+  const reader=createIngestion({maxReadBytesPerScan:2048,maxCacheBytes:1300,maxSummaryBytes:1300},{resumable:true});
+  const factory=()=>{let n=0;return {push(){n++},snapshot(){return {n,padding:'x'.repeat(180)}}}};
+  let done=0;
+  for(let scan=0;scan<100 && done<files.length;scan++) {
+    reader.beginScan(); done=0;
+    for(const file of files) try { const entry=await reader.read(file,factory); assert.equal(entry.value.n,500); done++; } catch(error) { assert.equal(error.code,'INGESTION_LIMIT'); }
+  }
+  assert.equal(done,files.length,'all files eventually load even when their summaries exceed the in-memory LRU');
+  assert.equal(reader.deferredCount,0);
+});
+
+test('Copilot loading reports aggregate byte progress across multiple transcripts', async t => {
+  const {createIngestion}=require('../lib/ingestion');
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'agentobs-progress-')); t.after(()=>fs.rm(root,{recursive:true,force:true}));
+  const files=Array.from({length:3},(_,i)=>path.join(root,`${i}.jsonl`));
+  for(const file of files) await fs.writeFile(file,'{"x":1}\n'.repeat(700));
+  const reader=createIngestion({maxReadBytesPerScan:2048},{resumable:true});
+  const factory=()=>{let n=0;return {push(){n++},snapshot(){return {n}}}};
+  let last=0,done=0;
+  for(let scan=0;scan<30 && done<files.length;scan++) {
+    reader.beginScan();done=0;
+    for(const file of files) try { await reader.read(file,factory);done++; } catch(e) { assert.equal(e.code,'INGESTION_LIMIT'); }
+    if(reader.deferredCount) {const p=reader.progress;assert.ok(p); assert.equal(p.bytesTotal, files.length*5600); assert.ok(p.bytesRead>=last,`aggregate progress moved backward on scan ${scan}`);last=p.bytesRead;}
+  }
+  assert.equal(done,files.length);
+});

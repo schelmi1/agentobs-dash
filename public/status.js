@@ -98,9 +98,13 @@
       const remaining = Number.isSafeInteger(input.filesRemaining) && input.filesRemaining > 0 ? input.filesRemaining : undefined;
       const file = input.fileProgress;
       const percent = Number.isSafeInteger(file?.bytesRead) && Number.isSafeInteger(file?.bytesTotal) && file.bytesTotal > 0 && file.bytesRead >= 0 && file.bytesRead <= file.bytesTotal ? Math.floor(file.bytesRead / file.bytesTotal * 100) : undefined;
-      const progress = percent !== undefined ? `Loading transcripts: current file ${percent}% · ${remaining || 1} remaining` : remaining !== undefined ? `Loading transcripts: ${remaining} files deferred to the next scan` : count === undefined ? 'Loading transcripts' : `Loading transcripts: ${count} files checked`;
+      const progress = percent !== undefined ? `Loading Copilot transcripts: ${percent}% · ${remaining || 1} files remaining` : remaining !== undefined ? `Loading transcripts: ${remaining} files deferred to the next scan` : count === undefined ? 'Loading transcripts' : `Loading transcripts: ${count} files checked`;
       trigger.dataset.loading = String(loading);
-      get('status-loading-count').textContent = loading && percent !== undefined ? `· ${percent}%` : loading && remaining !== undefined ? `· ${remaining} left` : loading && count !== undefined ? `· ${count}` : '';
+      const determinate = loading && percent !== undefined;
+      trigger.dataset.progress = determinate ? 'determinate' : 'indeterminate';
+      if (determinate) trigger.style.setProperty('--loading-progress', `${percent}%`);
+      else trigger.style.removeProperty('--loading-progress');
+      get('status-loading-count').textContent = loading && remaining !== undefined ? `· ${remaining} left` : loading && percent !== undefined ? `· ${percent}%` : loading && count !== undefined ? `· ${count}` : '';
       picker.dataset.severity = status.severity; trigger.dataset.state = status.state;
       get('connection').textContent = loading ? progress : status.state; get('connection').dataset.state = status.state;
       trigger.title = loading ? progress + ' · Status: ' + status.state + ' · Severity: ' + status.label : 'Status: ' + status.state + ' · Severity: ' + status.label;
