@@ -320,3 +320,118 @@ test('large Copilot legacy JSON chat content remains observable', async t => {
   assert.equal(find(model, demo.ids.failed).displayState, 'failed');
   assert.equal(find(model, demo.ids.failed).observationStale, false);
 });
+
+test('a broken Copilot transcript does not mark other workspace agents unavailable', async t => {
+  const demo = await fixture(t); t.after(() => demo.observer.close());
+  await demo.observer.scan();
+  await fs.appendFile(demo.fileFor(demo.ids.parser), '{invalid JSON}\n');
+  const model = await demo.observer.scan();
+  assert.equal(find(model, demo.ids.parser).observationStale, true);
+  assert.equal(find(model, demo.ids.main).observationStale, false);
+  assert.equal(find(model, demo.ids.reviewer).observationStale, false);
+});
+
+test('Copilot ingestion resumes a large file across bounded scans', async t => {
+  const { createIngestion } = require('../lib/ingestion');
+  const { createStringLimiter } = require('../lib/harnesses/copilot-strings');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agentobs-bounded-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const file = path.join(root, 'events.jsonl');
+  await fs.writeFile(file, Array.from({length: 200}, (_, i) => JSON.stringify({ i, text: 'x'.repeat(50) })).join('\n') + '\n');
+  const reader = createIngestion({ maxReadBytesPerScan: 2048 }, { createProjection: createStringLimiter, resumable: true });
+  const factory = () => { let count = 0; return { push() { count++; }, snapshot() { return count; } }; };
+  let result, attempts = 0;
+  while (!result && attempts++ < 20) { reader.beginScan(); try { result = await reader.read(file, factory); } catch (e) { assert.equal(e.code, 'INGESTION_LIMIT'); } }
+  assert.ok(result, 'the file eventually completes despite being larger than a scan budget');
+  assert.equal(result.value, 200);
+  assert.ok(attempts > 1);
+  assert.ok(reader.stats.readBytes < (await fs.stat(file)).size * 2, 'resumption does not repeatedly reread the entire file');
+});
+
+test('resumable Copilot reads detect replacement and preserve appended events', async t => {
+  const { createIngestion } = require('../lib/ingestion');
+  const { createStringLimiter } = require('../lib/harnesses/copilot-strings');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agentobs-resume-')); t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const file = path.join(root, 'events.jsonl');
+  const records = tag => Array.from({length: 120}, (_, i) => JSON.stringify({tag, i, text: 'x'.repeat(50)})).join('\n') + '\n';
+  await fs.writeFile(file, records('old'));
+  const reader = createIngestion({ maxReadBytesPerScan: 2048 }, { createProjection: createStringLimiter, resumable: true });
+  const factory = () => { const values = []; return { push(x) { values.push(x.tag); }, snapshot() { return values; } }; };
+  reader.beginScan(); await assert.rejects(reader.read(file, factory), {code:'INGESTION_LIMIT'});
+  await fs.writeFile(file, records('new'));
+  let result;
+  for (let i = 0; !result && i < 20; i++) { reader.beginScan(); try { result = await reader.read(file, factory); } catch (e) { assert.equal(e.code, 'INGESTION_LIMIT'); } }
+  assert.ok(result); assert.equal(result.value.length, 120); assert.ok(result.value.every(x => x === 'new'));
+  await fs.appendFile(file, JSON.stringify({tag:'append'}) + '\n');
+  reader.beginScan(); result = await reader.read(file, factory);
+  assert.equal(result.value.length, 121); assert.equal(result.value.at(-1), 'append');
+});
+
+test('resumable Copilot JSON parsing works across small read budgets', async t => {
+  const { createIngestion } = require('../lib/ingestion');
+  const { createStringLimiter } = require('../lib/harnesses/copilot-strings');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agentobs-resume-json-')); t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const file = path.join(root, 'chat.json'); await fs.writeFile(file, JSON.stringify({keep:'value', body:'x'.repeat(20000)}));
+  const reader = createIngestion({maxReadBytesPerScan:2048}, {createProjection:createStringLimiter, resumable:true});
+  const factory = () => { let value; return {push(x) { value=JSON.parse(x); }, snapshot() {return value;} }; };
+  let result;
+  for (let i=0; !result && i<30; i++) { reader.beginScan(); try { result=await reader.read(file,factory,{json:true,projectJson:true}); } catch(e) { assert.equal(e.code,'INGESTION_LIMIT'); } }
+  assert.ok(result); assert.equal(result.value.keep, 'value'); assert.equal(result.value.body.length, 16384);
+});
+
+test('completed Copilot checkpoints resume appended transcripts after restart', async t => {
+  const { createIngestion } = require('../lib/ingestion');
+  const { createStringLimiter } = require('../lib/harnesses/copilot-strings');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agentobs-restart-')); t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const file=path.join(root,'events.jsonl'), indexFile=path.join(root,'index.json');
+  await fs.writeFile(file, Array.from({length:2000},(_,i)=>JSON.stringify({n:i,private:'CHECKPOINT_PRIVATE_MARKER'})).join('\n')+'\n');
+  const factory=()=>{let total=0;return {push(r){total+=r.n},snapshot(){return {total}},checkpoint(){return {total}},restore(s){total=s.total}}};
+  const opts={createProjection:createStringLimiter,resumable:true,indexFile,indexVersion:'test'};
+  const first=createIngestion({},opts); await first.read(file,factory); await first.saveIndex({force:true});
+  assert.equal((await fs.readFile(indexFile,'utf8')).includes('CHECKPOINT_PRIVATE_MARKER'),false);
+  await fs.appendFile(file,'{"n":2000}\n');
+  const second=createIngestion({},opts); await second.loadIndex(); const result=await second.read(file,factory);
+  assert.equal(result.value.total,2001000);
+  assert.ok(second.stats.readBytes < 2048,'restart reads the append and guards rather than replaying the whole transcript');
+});
+
+test('Copilot restart checkpoints preserve tool and token state without storing raw tool bodies', async t => {
+  const demo = await fixture(t); await demo.observer.scan(); await demo.observer.close();
+  const indexDirectory=path.join(demo.root,'.agentobs');
+  const indexFiles=(await fs.readdir(indexDirectory)).filter(name=>name.startsWith('index-copilot-vscode-'));
+  assert.equal(indexFiles.length,1);
+  const indexText=await fs.readFile(path.join(indexDirectory,indexFiles[0]),'utf8');
+  assert.equal(indexText.includes(demo.privateText),false);
+  await demo.finishTool(demo.ids.parser, 'parser-tests');
+  await demo.usage(demo.ids.parser,1000,0,100);
+  const observer=new Observer(demo.config); t.after(()=>observer.close());
+  const model=await observer.scan();
+  assert.equal(find(model,demo.ids.parser).observationStale,false);
+  assert.deepEqual(find(model,demo.ids.parser).tokenUsage,{input:7000,cachedInput:3000,output:600});
+  assert.equal(find(model,demo.ids.parser).currentTool,undefined);
+});
+
+test('large Copilot workspaces report loading and eventually include all agents', async t => {
+  const demo=await fixture(t); t.after(()=>demo.observer.close());
+  await demo.transcript(demo.ids.main,'assistant.message',{content:'x'.repeat(10*1024*1024),toolRequests:[]});
+  await demo.transcript(demo.ids.parser,'assistant.message',{content:'y'.repeat(10*1024*1024),toolRequests:[]});
+  let model=await demo.observer.scan();
+  assert.equal(model.startupLoading,true);
+  assert.ok(model.startupRemaining>0);
+  assert.ok(model.loadingFileProgress.bytesRead>0 && model.loadingFileProgress.bytesRead<model.loadingFileProgress.bytesTotal);
+  for(let i=0;model.startupLoading && i<10;i++) model=await demo.observer.scan();
+  assert.equal(model.startupLoading,false);
+  assert.equal(model.unreadableFiles,0);
+  for(const id of [demo.ids.main,demo.ids.parser,demo.ids.reviewer,demo.ids.failed]) assert.ok(find(model,id),`missing ${id}`);
+});
+
+test('a changed checkpoint boundary triggers a full safe replay', async t => {
+  const {createIngestion}=require('../lib/ingestion'); const {createStringLimiter}=require('../lib/harnesses/copilot-strings');
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'agentobs-guard-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
+  const file=path.join(root,'events.jsonl'),indexFile=path.join(root,'index.json');
+  const opts={createProjection:createStringLimiter,resumable:true,indexFile,indexVersion:'test'};
+  const factory=()=>{let total=0;return {push(r){total+=r.n},snapshot(){return {total}},checkpoint(){return {total}},restore(x){total=x.total}}};
+  await fs.writeFile(file,'{"n":1}\n'.repeat(2000));const first=createIngestion({},opts);await first.read(file,factory);await first.saveIndex({force:true});
+  await fs.writeFile(file,'{"n":2}\n'.repeat(2000)+'{"n":3}\n');const second=createIngestion({},opts);await second.loadIndex();
+  const value=await second.read(file,factory);assert.equal(value.value.total,4003);assert.ok(second.stats.readBytes>(await fs.stat(file)).size);
+});

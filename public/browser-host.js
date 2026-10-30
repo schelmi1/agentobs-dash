@@ -35,7 +35,7 @@
     }
   };
   const status = window.agentobsStatus.createStatus(document);
-  const connection = (state, detail, code) => status.update({ state, detail, code, model, loading: model?.startupLoading && ['Live', 'Degraded'].includes(state), filesRemaining: model?.startupRemaining });
+  const connection = (state, detail, code) => status.update({ state, detail, code, model, loading: (model?.startupLoading || model?.loadingFiles) && ['Live', 'Degraded'].includes(state), filesRemaining: model?.loadingRemaining ?? model?.startupRemaining, fileProgress: model?.loadingFileProgress });
   connection('Connecting');
   const workspacePicker = $('workspaces');
   const workspaceTrigger = $('workspace-trigger');
