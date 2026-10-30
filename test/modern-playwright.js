@@ -31,7 +31,7 @@ async function main() {
     await page.addInitScript(() => { if (!localStorage.getItem('agentobs.preferences')) localStorage.setItem('agentobs.preferences', JSON.stringify({ design: 'tree', theme: 'rounded', colors: 'dark' })); });
     await page.goto(url); await page.waitForSelector('.agent');
     assert.equal(await page.locator('html').getAttribute('data-design'), 'modern', 'old design preferences migrate to the agent network');
-    assert.equal(await page.locator('.brand-version').innerText(), '0.1.0');
+    assert.equal(await page.locator('.brand-version').innerText(), require('../package.json').version);
     assert.equal(await page.getByRole('button', { name: 'Choose design' }).count(), 0);
     await page.waitForSelector('.modern-run');
     assert.equal(await page.locator('.metric-token-heading .token-help').isVisible(), false, 'Modern sidebar omits token help');
