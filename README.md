@@ -62,9 +62,7 @@ Activity is inferred from recorded harness data. An open terminal alone does not
 
 ## Get started
 
-**Requirements:** Node.js 22+, npm, and a supported coding harness with local session data.
-
-> The npm release is being prepared. The examples below assume the planned package name `agentobs-dash`; they will work after that package is published. Until then, use the source instructions under [Development](#development).
+**Requirements:** Linux, Node.js 22+, npm, and a supported coding harness with local session data. macOS and Windows are not supported yet.
 
 From a project directory, start agentobs with:
 
