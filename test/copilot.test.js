@@ -272,3 +272,51 @@ test('Copilot streams outlive 10000 events while retaining cumulative usage and 
   assert.equal(find(model, demo.ids.main).observationStale, true);
   assert.deepEqual(find(model, demo.ids.main).tokenUsage, { input: 32100, cachedInput: 18050, output: 10950 });
 });
+
+test('large Copilot tool results do not make the workspace observation unavailable', async t => {
+  const demo = await fixture(t);
+  t.after(() => demo.observer.close());
+  const before = await demo.observer.scan();
+  assert.equal(find(before, demo.ids.parser).displayState, 'tool');
+  await demo.transcript(demo.ids.parser, 'tool.execution_complete', { toolCallId: 'parser-tests', success: true, result: { content: 'x'.repeat(5 * 1024 * 1024) } });
+  const model = await demo.observer.scan();
+  assert.equal(model.unreadableFiles, 0);
+  assert.equal(find(model, demo.ids.parser).observationStale, false);
+  assert.notEqual(find(model, demo.ids.parser).displayState, 'stale');
+  assert.equal(find(model, demo.ids.main).observationStale, false);
+  assert.equal(JSON.stringify(model).includes('x'.repeat(1000)), false);
+});
+
+test('Copilot string limiting preserves valid JSON and Unicode across chunks and rejects malformed strings', () => {
+  const { createStringLimiter } = require('../lib/harnesses/copilot-strings');
+  const original = { type: 'tool.execution_complete', data: { toolCallId: 'tool', result: { content: 'abcé🛰️\\"\n'.repeat(3000) } }, id: 'end' };
+  const input = Buffer.from(JSON.stringify(original));
+  for (const chunkSize of [1, 13, 257, 65536]) {
+    const limit = createStringLimiter(4096), chunks = [];
+    for (let i = 0; i < input.length; i += chunkSize) chunks.push(limit(input.subarray(i, i + chunkSize)));
+    const result = JSON.parse(Buffer.concat(chunks).toString());
+    assert.equal(result.id, 'end');
+    assert.equal(result.data.toolCallId, 'tool');
+    assert.ok(original.data.result.content.startsWith(result.data.result.content));
+    assert.ok(result.data.result.content.length < original.data.result.content.length);
+    assert.ok(!result.data.result.content.includes('\ufffd'));
+  }
+  const bad = createStringLimiter(2);
+  assert.throws(() => bad(Buffer.from('{"text":"long\\q"}')), /MALFORMED_RECORD/);
+  assert.throws(() => createStringLimiter(2)(Buffer.from('{"text":"long\\uXX00"}')), /MALFORMED_RECORD/);
+});
+
+test('large Copilot legacy JSON chat content remains observable', async t => {
+  const demo = await fixture(t);
+  t.after(() => demo.observer.close());
+  const chatDir = path.join(demo.storage, 'agentobs-demo-api', 'chatSessions');
+  const jsonl = path.join(chatDir, demo.ids.failed + '.jsonl');
+  const chat = JSON.parse((await fs.readFile(jsonl, 'utf8')).trim()).v;
+  chat.requests[0].response.push({ kind: 'text', value: 'x'.repeat(5 * 1024 * 1024) });
+  await fs.unlink(jsonl);
+  await fs.writeFile(path.join(chatDir, demo.ids.failed + '.json'), JSON.stringify(chat));
+  const model = await demo.observer.scan();
+  assert.equal(model.unreadableFiles, 0);
+  assert.equal(find(model, demo.ids.failed).displayState, 'failed');
+  assert.equal(find(model, demo.ids.failed).observationStale, false);
+});
