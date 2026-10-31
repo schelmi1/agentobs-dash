@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.7 - 2026-10-31
 
 - Keep newly completed workspaces visible with a finishing indicator before moving them to history; configure the delay in Settings.
 - Show and navigate to finishing workspaces from the sidebar, and display each workspace's last activity time.

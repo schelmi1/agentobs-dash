@@ -1,6 +1,6 @@
 {
   "name": "agentobs-dash",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "A local dashboard for observing coding agents across projects.",
   "license": "MIT",
   "files": [
