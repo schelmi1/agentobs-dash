@@ -225,8 +225,8 @@ async function main() {
     assert.equal(await page.getByRole('navigation', { name: 'Workspace navigation' }).isVisible(), true);
     assert.equal(await page.getByRole('button', { name: 'History', exact: true }).isDisabled(), true);
     await page.getByRole('button', { name: 'Needs attention', exact: true }).first().click();
-    assert.equal(await page.locator('.attention-queue').evaluate(node => node.open), true);
-    await page.locator('.attention-queue > summary').click();
+    assert.equal(await page.locator('.attention-queue:not(.finishing-queue)').evaluate(node => node.open), true);
+    await page.locator('.attention-queue:not(.finishing-queue) > summary').click();
     assert.equal(await page.getByRole('button', { name: 'Choose theme' }).isVisible(), true, 'theme is directly available');
     assert.equal(await page.getByRole('button', { name: 'Choose colors' }).isVisible(), true, 'colors are directly available');
     assert.equal(await page.locator('.modern-links path').count(), 3, 'one link for every parent-child relationship');
@@ -271,7 +271,7 @@ async function main() {
     await page.getByRole('button', { name: 'Show 1 delegated agent under Research existing onboarding flows' }).click();
     assert.equal(await page.locator('.modern-agent').count(), 6);
     await page.getByRole('button', { name: 'Hide delegated agents under Build the new customer onboarding experience' }).click();
-    await page.locator('.attention-queue > summary').click();
+    await page.locator('.attention-queue:not(.finishing-queue) > summary').click();
     await page.getByRole('button', { name: /Show Explore interface directions/ }).click();
     assert.equal(await page.locator('.inspector h2').innerText(), 'Explore interface directions');
     assert.equal(await page.locator('.modern-agent', { hasText: 'Explore interface directions' }).count(), 1, 'attention selection expands its graph path');

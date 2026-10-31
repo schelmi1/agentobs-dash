@@ -16,6 +16,7 @@
       attentionOnly: saved.attentionOnly === true, compactDensity: saved.compactDensity === true,
       collapsed: ids(saved.collapsed), expandedCompleted: ids(saved.expandedCompleted), shownCompleted: ids(saved.shownCompleted),
       modernWorkspaceArrangement: ['row', 'column', 'grid'].includes(saved.modernWorkspaceArrangement) ? saved.modernWorkspaceArrangement : 'column',
+      modernFitWorkspaces: saved.modernFitWorkspaces === true,
       modernSwarm: saved.modernSwarm === true,
       modernSwarmRuns: ids(saved.modernSwarmRuns),
       manuallyCompleted: Object.fromEntries(Object.entries(saved.manuallyCompleted && typeof saved.manuallyCompleted === 'object' && !Array.isArray(saved.manuallyCompleted) ? saved.manuallyCompleted : {}).slice(-1000).filter(([id, signature]) => id.length <= 2000 && typeof signature === 'string' && signature.length <= 40)),

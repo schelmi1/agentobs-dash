@@ -27,8 +27,8 @@ async function main() {
           for (let child = 0; child < 6; child++) sessions.push(make(id + '-child-' + child, label + ' specialist task ' + run + '-' + child, { parentId: id, agentName: 'Specialist ' + child, ...(resumed && run === 1 && child === 5 ? { lastActivity: new Date(now + 1000).toISOString() } : {}), ...(run === 2 && child === 5 ? { cwd: path.join(root, 'nested') } : {}), needsInput: run === 1 && child === 5, currentTool: { id: 'running-' + child, name: 'exec_command', label: 'Exec · ' + ['npm', 'rg', 'node', 'git', 'python', 'ls'][child], status: 'in_progress', startedAt: new Date(now - 60000 - child * 1000).toISOString() }, ...(child === 1 && run === 0 ? { toolHistory: Array.from({ length: 5 }, (_, i) => ({ id: 'read-' + i, name: 'read', label: 'Read ' + i, status: 'completed', timestamp: new Date(now - 30000 - i * 1000).toISOString() })) } : {}) }));
           sessions.push(make(id + '-nested', label + ' nested review ' + run, { parentId: id + '-child-0', agentName: 'Reviewer', currentTool: { id: 'unknown', name: 'search', label: 'Search', status: 'unknown' }, toolHistory: [{ id: 'error', name: 'exec_command', label: 'Exec · npm', status: 'failed', timestamp: new Date(now - 120000).toISOString() }] }));
         }
-        sessions.push(make(label + '-past', label + ' completed investigation', { status: 'completed' }));
-        sessions.push(make(label + '-past-child', label + ' completed worker', { status: 'completed', parentId: label + '-past', agentName: 'Past worker', toolHistory: [{ id: 'past-read', name: 'read', label: 'Read', status: 'completed' }] }));
+        sessions.push(make(label + '-past', label + ' completed investigation', { status: 'completed', lastActivity: new Date(now - 172800000).toISOString() }));
+        sessions.push(make(label + '-past-child', label + ' completed worker', { status: 'completed', lastActivity: new Date(now - 172800000).toISOString(), parentId: label + '-past', agentName: 'Past worker', toolHistory: [{ id: 'past-read', name: 'read', label: 'Read', status: 'completed' }] }));
         sessions.push(make(label + '-quiet', label + ' quiet investigation', { status: 'active', lastActivity: new Date(now - 7200000).toISOString() }));
         sessions.push(make(label + '-inactive', label + ' inactive investigation', { status: 'unknown', attentionState: 'failed', lastActivity: new Date(now - 7200000).toISOString() }));
         if (generation) sessions.push(make(label + '-ephemeral-' + generation, label + ' transient ' + generation, { parentId: label + '-run-0', agentName: 'Transient' }));
@@ -46,6 +46,10 @@ async function main() {
       await page.goto(instances[i].url); await page.waitForSelector('.agent');
       await page.waitForSelector('.modern-run');
       assert.equal(await page.locator('.modern-run').count(), 3);
+      const titleRow = page.locator('.modern-run').first().locator('.modern-run-title-row');
+      assert.match(await titleRow.locator('.modern-last-active').innerText(), /^Last active (just now|\d+ min ago)$/);
+      const titleGeometry = await titleRow.evaluate(node => ({ row: node.getBoundingClientRect().toJSON(), provider: node.querySelector('.modern-provider-label').getBoundingClientRect().toJSON(), last: node.querySelector('.modern-last-active').getBoundingClientRect().toJSON() }));
+      assert.ok(titleGeometry.provider.left < titleGeometry.last.left && Math.abs(titleGeometry.last.right - titleGeometry.row.right) < 1, 'last active is aligned to the right opposite the harness');
       assert.equal(await page.locator('#metric-workspaces').innerText(), '3', 'active workspaces count separate runs even in one directory');
       assert.equal(await page.locator('#metric-workspaces').isVisible(), true, 'active workspace count is visible');
       assert.equal(await page.locator('.modern-agent').count(), 24);
@@ -105,10 +109,20 @@ async function main() {
         assert.equal(Object.keys(await page.evaluate(() => JSON.parse(localStorage.getItem('agentobs.preferences')).modernWorkspaceSizes)).length, 2, mode + ' records both custom sizes');
         await fitAll.click();
         const fitted = await runs.evaluateAll(nodes => nodes.slice(0, 2).map(node => ({ width: Math.round(node.getBoundingClientRect().width), height: node.querySelector('.modern-graph-viewport').clientHeight })));
-        assert.deepEqual(fitted, initial, mode + ' Fit restores both workspace dimensions');
+        assert.deepEqual(fitted.map(item => item.width), initial.map(item => item.width), mode + ' Fit restores workspace widths');
+        const outerHeights = await runs.evaluateAll(nodes => nodes.map(node => Math.round(node.getBoundingClientRect().height)));
+        assert.ok(outerHeights.every(height => Math.abs(height - outerHeights[0]) <= 1), mode + ' Fit makes full workspace panels equally tall: ' + outerHeights);
         assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('agentobs.preferences')).modernWorkspaceSizes), {}, 'Fit persists the restored sizes');
         assert.equal(await controls.getByRole('button', { name: mode, exact: true }).getAttribute('aria-pressed'), 'true', 'Fit retains the selected arrangement');
       }
+      if (!await page.locator('.completed-history').evaluate(node => node.open)) await page.locator('.completed-history > summary').click();
+      await page.locator('.completed-history .modern-run').waitFor();
+      let fittedHeights = await page.locator('.modern-runs[data-fitted=true] > .modern-run').evaluateAll(nodes => nodes.map(node => Math.round(node.getBoundingClientRect().height)));
+      assert.ok(fittedHeights.length > 3 && fittedHeights.every(height => Math.abs(height - fittedHeights[0]) <= 1), 'Fit uses a common height across live and open history workspaces: ' + fittedHeights);
+      await page.reload(); await page.waitForSelector('.modern-run');
+      assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('agentobs.preferences')).modernFitWorkspaces), true, 'Fit mode survives reload');
+      fittedHeights = await page.locator('.modern-runs[data-fitted=true] > .modern-run').evaluateAll(nodes => nodes.map(node => Math.round(node.getBoundingClientRect().height)));
+      assert.ok(fittedHeights.every(height => Math.abs(height - fittedHeights[0]) <= 1), 'workspace panel heights remain equal after reload');
       await page.setViewportSize({ width: 1100, height: 900 });
       await controls.getByRole('button', { name: 'Column', exact: true }).click();
       const columnWidths = await page.locator('.modern-runs').first().evaluate(node => ({ grid: node.getBoundingClientRect().width, runs: [...node.children].map(run => run.getBoundingClientRect().width) }));
@@ -143,9 +157,11 @@ async function main() {
       await page.getByRole('button', { name: 'History', exact: true }).click();
       assert.equal(await page.locator('.quiet-history').evaluate(node => node.open), true, 'history navigation opens the first history section');
       assert.equal(await page.locator('.quiet-history .modern-history-state').innerText(), 'Quiet');
+      assert.match(await page.locator('.quiet-history .modern-last-active').innerText(), /Last active 2 hrs ago/, 'history displays relative hours');
       await page.locator('.completed-history > summary').click();
       const completed = page.locator('.completed-history .modern-run');
       assert.equal(await completed.locator('.modern-history-state').innerText(), 'Completed');
+      assert.match(await completed.locator('.modern-last-active').innerText(), /Last active 2 days ago/, 'history displays relative days');
       assert.equal(await completed.locator('.modern-agent').count(), 1, 'completed child starts minimized');
       assert.equal(await completed.locator('.modern-call', { hasText: 'Read' }).count(), 1, 'historical tool activity is available');
       await completed.getByRole('button', { name: /Show 1 completed agent under/ }).click();
@@ -175,7 +191,7 @@ async function main() {
     assert.equal(await alphaRun.locator('.modern-graph-viewport').count(), 1);
     const attentionRun = pages[0].locator('.modern-run').filter({ hasText: 'Alpha mission 1' });
     await attentionRun.getByRole('button', { name: 'Collapse run Alpha mission 1' }).click();
-    await pages[0].locator('.attention-queue > summary').click();
+    await pages[0].locator('.attention-queue:not(.finishing-queue) > summary').click();
     await pages[0].getByRole('button', { name: /Show Alpha specialist task 1-5/ }).click();
     assert.equal(await attentionRun.locator('.modern-graph-viewport').count(), 1, 'attention selection reopens a collapsed run');
     assert.equal(await pages[0].locator('.inspector h2').innerText(), 'Alpha specialist task 1-5');

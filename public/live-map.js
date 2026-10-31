@@ -7,14 +7,28 @@
   const { flatten, hasLive, historyGroupFor, completedBranch, allSubagentsCompleted, subagentGroups, filterTree, familyTokenUsage } = window.agentobsSelectors;
   const tokenFormatter = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
   const tokenCount = value => Number.isFinite(value) ? tokenFormatter.format(value).toLowerCase() : '—';
+  const formatLastActive = (timestamp, now = Date.now()) => {
+    if (!Number.isFinite(timestamp)) return 'Last active —';
+    const minutes = Math.floor(Math.max(0, now - timestamp) / 60000);
+    if (minutes < 1) return 'Last active just now';
+    if (minutes < 60) return 'Last active ' + minutes + ' min ago';
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return 'Last active ' + hours + ' hr' + (hours === 1 ? '' : 's') + ' ago';
+    const days = Math.floor(hours / 24);
+    return 'Last active ' + days + ' day' + (days === 1 ? '' : 's') + ' ago';
+  };
+  const updateLastActive = () => {
+    for (const node of document.querySelectorAll('.modern-last-active[data-timestamp]')) node.textContent = formatLastActive(Number(node.dataset.timestamp));
+  };
+  setInterval(updateLastActive, 60000);
   const { themes, colors, normalizeAppearance, applyAppearance, createPicker } = window.agentobsThemes;
   const savedInspectorWidth = Number.isFinite(saved.inspectorWidth) && saved.inspectorWidth >= 220 && saved.inspectorWidth <= 480 ? Math.round(saved.inspectorWidth) : undefined;
-  const ui = { search: saved.search || '', runKey: saved.runKey || '', attentionOnly: Boolean(saved.attentionOnly), collapsed: new Set(saved.collapsed || []), expandedCompleted: new Set(saved.expandedCompleted || []), shownCompleted: new Set(saved.shownCompleted || []), modernExpandedCompleted: new Set(saved.modernExpandedCompleted || []), inspectorWidth: savedInspectorWidth, ...normalizeAppearance(saved), modernWorkspaceArrangement: saved.modernWorkspaceArrangement, modernSwarmRuns: new Set(saved.modernSwarmRuns || []), modernHideCompletedRuns: new Set(saved.modernHideCompletedRuns || []), modernWorkspaceSizes: saved.modernWorkspaceSizes || {}, selected: undefined };
+  const ui = { search: saved.search || '', runKey: saved.runKey || '', attentionOnly: Boolean(saved.attentionOnly), collapsed: new Set(saved.collapsed || []), expandedCompleted: new Set(saved.expandedCompleted || []), shownCompleted: new Set(saved.shownCompleted || []), modernExpandedCompleted: new Set(saved.modernExpandedCompleted || []), inspectorWidth: savedInspectorWidth, ...normalizeAppearance(saved), modernWorkspaceArrangement: saved.modernWorkspaceArrangement, modernFitWorkspaces: saved.modernFitWorkspaces, modernSwarmRuns: new Set(saved.modernSwarmRuns || []), modernHideCompletedRuns: new Set(saved.modernHideCompletedRuns || []), modernWorkspaceSizes: saved.modernWorkspaceSizes || {}, selected: undefined };
   const labels = { working: 'Working', tool: 'Running tool', input: 'Needs input', starting: 'Starting', quiet: 'Quiet', failed: 'Failed', interrupted: 'Interrupted', completed: 'Completed', unknown: 'Unknown' };
   let state;
   let lastHostSelection;
   let migrateLegacySwarm = saved.modernSwarm;
-  const persist = () => host.setState({ search: ui.search, runKey: ui.runKey, attentionOnly: ui.attentionOnly, collapsed: [...ui.collapsed], expandedCompleted: [...ui.expandedCompleted], shownCompleted: [...ui.shownCompleted], modernExpandedCompleted: [...ui.modernExpandedCompleted], inspectorWidth: ui.inspectorWidth, modernWorkspaceArrangement: ui.modernWorkspaceArrangement, modernSwarm: false, modernSwarmRuns: [...ui.modernSwarmRuns], modernHideCompletedRuns: [...ui.modernHideCompletedRuns], modernWorkspaceSizes: ui.modernWorkspaceSizes, design: ui.design, theme: ui.theme, colors: ui.colors });
+  const persist = () => host.setState({ search: ui.search, runKey: ui.runKey, attentionOnly: ui.attentionOnly, collapsed: [...ui.collapsed], expandedCompleted: [...ui.expandedCompleted], shownCompleted: [...ui.shownCompleted], modernExpandedCompleted: [...ui.modernExpandedCompleted], inspectorWidth: ui.inspectorWidth, modernWorkspaceArrangement: ui.modernWorkspaceArrangement, modernFitWorkspaces: ui.modernFitWorkspaces, modernSwarm: false, modernSwarmRuns: [...ui.modernSwarmRuns], modernHideCompletedRuns: [...ui.modernHideCompletedRuns], modernWorkspaceSizes: ui.modernWorkspaceSizes, design: ui.design, theme: ui.theme, colors: ui.colors });
   const badge = (agent) => element('span', 'status status-' + agent.displayState, labels[agent.displayState]);
   const welcomePreview = () => {
     const welcome = element('section', 'empty empty-welcome', undefined, 'welcome');
@@ -92,7 +106,16 @@
   activityControls.setAttribute('aria-label', 'Agent activity controls');
   const attentionQueue = element('details', 'attention-queue');
   attentionQueue.hidden = true;
-  activityControls.append(heading, summary, attentionQueue, toolbar);
+  const finishingQueue = element('details', 'attention-queue finishing-queue');
+  finishingQueue.id = 'finishing-queue'; finishingQueue.hidden = true;
+  const finishingButton = document.querySelector('.metric-finishing');
+  finishingButton.addEventListener('click', () => {
+    if (finishingQueue.hidden) return;
+    finishingQueue.open = !finishingQueue.open;
+    if (finishingQueue.open) { finishingQueue.scrollIntoView({ block: 'nearest' }); finishingQueue.querySelector('summary')?.focus({ preventScroll: true }); }
+  });
+  finishingQueue.addEventListener('toggle', () => finishingButton.setAttribute('aria-expanded', String(finishingQueue.open)));
+  activityControls.append(heading, summary, attentionQueue, finishingQueue, toolbar);
   app.append(activityControls, layout);
   const placeActivityControls = () => {
     const focused = document.activeElement;
@@ -278,6 +301,7 @@
       const panel = toolsHandle.closest('.modern-run'), view = panel.querySelector('.modern-graph-viewport'), tools = panel.querySelector('.modern-tools-panel');
       modernGesture = { mode: 'tools-resize', id: panel.dataset.run, pointerId: event.pointerId, y: event.clientY, graphHeight: view.clientHeight, toolHeight: tools.getBoundingClientRect().height, view, tools };
     } else if (handle && event.button === 0) {
+      ui.modernFitWorkspaces = false; map.querySelectorAll('.modern-runs[data-fitted]').forEach(board => delete board.dataset.fitted);
       const panel = handle.closest('.modern-run'), view = panel.querySelector('.modern-graph-viewport');
       modernGesture = { mode: 'resize', id: panel.dataset.run, pointerId: event.pointerId, x: event.clientX, y: event.clientY, width: panel.getBoundingClientRect().width, height: view.clientHeight, boardWidth: panel.parentElement.clientWidth, panel, view };
     } else if (viewport && event.button === 1 && event.pointerType === 'mouse') {
@@ -415,15 +439,16 @@
       arrangement.append(control);
     }
     const fitWorkspaces = button('Fit', 'toolbar-button modern-arrangement-button modern-fit-workspaces', () => {
-      ui.modernWorkspaceSizes = {};
+      ui.modernWorkspaceSizes = {}; ui.modernFitWorkspaces = true;
       persist(); renderContent();
     });
     fitWorkspaces.setAttribute('aria-label', 'Fit all workspaces');
-    fitWorkspaces.title = 'Reset workspace sizes to fit the selected arrangement';
+    fitWorkspaces.title = 'Make workspace panels the same size in the selected arrangement';
     arrangement.append(fitWorkspaces);
     intro.append(arrangement); if (showControls) board.append(intro);
     const runs = element('div', 'modern-runs', undefined, 'modern-runs');
     runs.dataset.arrangement = ui.modernWorkspaceArrangement;
+    if (ui.modernFitWorkspaces) runs.dataset.fitted = 'true';
     runs.style.setProperty('--modern-columns', String(Math.min(4, Math.max(1, roots.length))));
     for (const root of roots) {
       modernGraphIsCompact = modernCompactFor(roots.length, root.id);
@@ -437,6 +462,7 @@
       const needsAttention = family.filter(agent => agent.needsAttention).length;
       const run = element('section', 'modern-run', undefined, 'modern:' + root.id);
       run.dataset.run = root.id;
+      if (root.completionHeld) run.dataset.completionHeld = 'true';
       const workspaceSize = ui.modernWorkspaceSizes[root.id];
       if (workspaceSize?.span) { run.dataset.span = String(workspaceSize.span); run.style.setProperty('--modern-span', workspaceSize.span); }
       run.setAttribute('aria-label', 'Run ' + root.title);
@@ -444,7 +470,12 @@
       const heading = element('div', 'modern-run-heading');
       const providerLabel = element('span', 'modern-eyebrow modern-provider-label', (root.providerLabel || 'CODEX').toUpperCase());
       providerLabel.dataset.provider = root.provider || 'codex';
-      heading.append(providerLabel, element('h3', '', root.title), element('span', 'modern-workspace', root.cwd));
+      const activityTimes = flatten([state.agents[root.id] || root]).map(agent => Date.parse(agent.lastActivity || '')).filter(Number.isFinite);
+      const lastActivity = activityTimes.length ? Math.max(...activityTimes) : NaN;
+      const lastActive = element('time', 'modern-last-active', formatLastActive(lastActivity));
+      if (Number.isFinite(lastActivity)) { lastActive.dataset.timestamp = String(lastActivity); lastActive.dateTime = new Date(lastActivity).toISOString(); lastActive.title = new Date(lastActivity).toLocaleString(); }
+      const titleRow = element('div', 'modern-run-title-row'); titleRow.append(providerLabel, lastActive);
+      heading.append(element('h3', '', root.title), element('span', 'modern-workspace', root.cwd));
       const totals = element('div', 'modern-workspace-totals');
       totals.setAttribute('aria-label', 'Run token usage including all subagents');
       const usage = familyTokenUsage(state.agents[root.id] || root);
@@ -456,6 +487,7 @@
       }
       heading.append(totals);
       const runInfo = element('div', 'modern-run-info');
+      if (root.completionHeld) runInfo.append(element('span', 'modern-completion-notice', 'Completed · moving to history'));
       if (historyGroup) runInfo.append(element('span', 'modern-history-state', root.manuallyCompleted ? 'Moved to history' : historyGroup === 'completed' ? 'Completed' : historyGroup === 'inactive' ? 'Inactive' : 'Quiet'));
       runInfo.append(element('span', 'modern-run-count', family.length + ' agent' + (family.length === 1 ? '' : 's')));
       if (root.manuallyCompleted || needsAttention) runInfo.append(element('span', 'modern-attention', root.manuallyCompleted ? 'Attention deferred' : needsAttention + ' need attention'));
@@ -475,6 +507,7 @@
         archive.title = 'Move this workspace to completed history until it has new activity'; runInfo.append(archive);
       }
       const runCollapsed = modernRunsCollapsed.has(root.id);
+      if (runCollapsed) run.dataset.collapsed = 'true';
       const runToggle = button(runCollapsed ? 'Open run ▾' : 'Collapse run ▴', 'modern-run-toggle', () => {
         if (runCollapsed) modernRunsCollapsed.delete(root.id); else modernRunsCollapsed.add(root.id);
         renderContent();
@@ -504,7 +537,7 @@
         fit.title = largeCards ? 'Return to a readable overview and collapse expanded branches' : 'Fit the visible agent network in this workspace'; runInfo.append(fit);
       }
       runInfo.append(runToggle);
-      header.append(heading, runInfo); run.append(header);
+      header.append(titleRow, heading, runInfo); run.append(header);
       if (runCollapsed) { runs.append(run); continue; }
       const graphHeader = element('div', 'modern-graph-header');
       const graphInfo = element('span', '', family.length + ' agent' + (family.length === 1 ? '' : 's') + (isSwarm ? ' · hover or focus a node for details · ' : ' · ') + 'drag to zoom · middle-drag to pan · Alt + wheel to zoom · double-click to reset');
@@ -861,6 +894,7 @@
       resize.dataset.modernResize = root.id; resize.setAttribute('aria-label', 'Resize workspace ' + root.title); resize.title = 'Drag to resize; use arrow keys to adjust width and height';
       resize.onkeydown = event => {
         if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+        ui.modernFitWorkspaces = false;
         const panel = event.currentTarget.closest('.modern-run'), view = panel.querySelector('.modern-graph-viewport');
         const current = ui.modernWorkspaceSizes[root.id] || {};
         const defaultSpan = ui.modernWorkspaceArrangement === 'column' ? 12 : ui.modernWorkspaceArrangement === 'grid' ? 6 : Math.max(3, Math.floor(12 / roots.length));
@@ -933,6 +967,24 @@
         item.append(open, element('span', 'secondary', labels[agent.displayState])); list.append(item);
       }
       entries.push(list); reconcile(attentionQueue, entries);
+    }
+    const finishing = state.forest.filter(root => root.completionHeld);
+    finishingQueue.hidden = !finishing.length;
+    if (!finishing.length) { finishingQueue.open = false; finishingButton.setAttribute('aria-expanded', 'false'); }
+    else {
+      const entries = [element('summary', '', 'Finishing · ' + finishing.length)];
+      const list = element('ul', 'attention-list');
+      for (const root of finishing) {
+        const item = element('li');
+        const open = button(root.title, 'attention-agent', () => {
+          modernRunsCollapsed.delete(root.id); ui.search = ''; ui.runKey = ''; ui.attentionOnly = false; search.value = ''; persist(); renderContent();
+          const run = [...map.querySelectorAll('.modern-run')].find(node => node.dataset.run === root.id);
+          run?.scrollIntoView({ block: 'start' }); run?.querySelector('.modern-run-toggle')?.focus({ preventScroll: true });
+        });
+        open.setAttribute('aria-label', 'Show finishing workspace ' + root.title);
+        item.append(open, element('span', 'secondary', 'Completed')); list.append(item);
+      }
+      entries.push(list); reconcile(finishingQueue, entries);
     }
     const counts = { working: 0, input: 0, quiet: 0, failed: 0, completed: 0, inactive: 0, unknown: 0 };
     for (const agent of all) {
@@ -1012,6 +1064,13 @@
       return [[viewport.dataset.run, { id: node.dataset.key, x: box.left - view.left, y: box.top - view.top }]];
     }));
     reconcile(map, next); renderInspector();
+    if (ui.modernFitWorkspaces) {
+      const boards = [...map.querySelectorAll('.modern-runs[data-fitted="true"]')];
+      for (const board of boards) board.style.removeProperty('grid-auto-rows');
+      const panels = boards.flatMap(board => [...board.querySelectorAll(':scope > .modern-run:not([data-collapsed])')]);
+      const commonHeight = Math.max(0, ...panels.map(panel => panel.getBoundingClientRect().height));
+      if (commonHeight) for (const board of boards) board.style.gridAutoRows = commonHeight + 'px';
+    }
     for (const viewport of map.querySelectorAll('.modern-graph-viewport[data-swarm="true"]')) {
       const anchor = swarmAnchors.get(viewport.dataset.run);
       const node = anchor && [...viewport.querySelectorAll('.modern-swarm-node')].find(card => card.dataset.key === anchor.id);

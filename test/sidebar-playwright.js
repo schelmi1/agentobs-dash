@@ -31,8 +31,10 @@ async function main() {
     await edge.focus(); await page.keyboard.press('End');
     assert.equal(Math.round((await page.locator('.dashboard-header').boundingBox()).width), 480, 'keyboard resize respects the maximum');
     await page.setViewportSize({ width: 800, height: 900 });
+    await page.waitForFunction(() => Math.round(document.querySelector('.dashboard-header').getBoundingClientRect().width) === 440);
     assert.equal(Math.round((await page.locator('.dashboard-header').boundingBox()).width), 440, 'narrow windows clamp width to leave workspace space');
     await page.setViewportSize({ width: 1440, height: 900 });
+    await page.waitForFunction(() => Math.round(document.querySelector('.dashboard-header').getBoundingClientRect().width) === 480);
     assert.equal(Math.round((await page.locator('.dashboard-header').boundingBox()).width), 480, 'returning to a wide window restores the saved width');
     await edge.focus(); await page.keyboard.press('Home');
     assert.equal(Math.round((await page.locator('.dashboard-header').boundingBox()).width), 190, 'keyboard resize respects the minimum');

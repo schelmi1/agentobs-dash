@@ -14,7 +14,10 @@
 .modern-stat strong { font-size: 28px; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
 .modern-stat span { margin-top: 7px; color: var(--muted); font-size: 11px; white-space: nowrap; }
 .modern-run { overflow: hidden; border: 1px solid var(--border); border-radius: 3px; background: var(--dashboard-card); }
-.modern-run-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 22px 24px; }
+.modern-run-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 20px; padding: 22px 24px; }
+.modern-run-title-row { display: flex; flex: 0 0 auto; width: 100%; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.modern-last-active { color: var(--muted); font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.modern-run-heading { flex: 1 1 200px; }
 .modern-run-heading { min-width: 0; }
 .modern-run-heading h3 { margin: 7px 0 4px; font-size: 19px; font-weight: 650; line-height: 1.3; overflow-wrap: anywhere; }
 .modern-workspace { display: block; color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -249,7 +252,6 @@
   .modern-nav-label { flex: 1; }
   .modern-nav-count:not(:empty) { min-width: 23px; padding: 2px 6px; border-radius: 20px; background: color-mix(in srgb, var(--amber) 18%, var(--dashboard-card)); color: var(--vscode-foreground); text-align: center; font-size: 10px; }
   :root[data-design='modern'] .overview { display: block; padding: 16px 10px; border: 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-  :root[data-design='modern'] .overview::before { content: 'OBSERVED IN SCOPE'; display: block; margin-bottom: 10px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .12em; }
   :root[data-design='modern'] .metric-grid { display: grid; grid-template-columns: 1fr; gap: 9px; }
   :root[data-design='modern'] .dashboard-header .metric, :root[data-design='modern'] .dashboard-header .metric:first-child { display: flex; flex-direction: row; align-items: center; justify-content: space-between; min-height: 0; padding: 0; border: 0; background: transparent; }
   :root[data-design='modern'][data-dashboard-theme='chamfered'] .dashboard-header .metric { clip-path: none; }
@@ -291,6 +293,13 @@
 .modern-runs[data-arrangement='grid'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .modern-runs[data-arrangement='row'] { grid-template-columns: repeat(var(--modern-columns, 1), minmax(0, 1fr)); }
 .modern-runs > .modern-run { min-width: 0; container: modern-run / inline-size; }
+/* Fit equalizes full panels, even when their headers and tool content differ. */
+:root[data-design='modern'] .modern-runs[data-fitted='true'] { grid-auto-rows: 1fr; align-items: stretch; }
+:root[data-design='modern'] .modern-runs[data-fitted='true'] > .modern-run:not([data-collapsed]) { display: flex; flex-direction: column; }
+:root[data-design='modern'] .modern-runs[data-fitted='true'] > .modern-run:not([data-collapsed]) .modern-run-body { flex: 1; }
+:root[data-design='modern'] .modern-runs[data-fitted='true'] > .modern-run:not([data-collapsed]) .modern-graph-viewport { flex: 1 1 464px; height: 464px; max-height: none; }
+:root[data-design='modern'] .modern-runs[data-fitted='true'] > .modern-run[data-collapsed] { align-self: start; }
+
 .modern-graph-viewport[data-compact='true'] .modern-item, :root[data-design='modern'] .modern-graph-viewport[data-compact='true'] .modern-agent, :root[data-design='modern'] .modern-graph-viewport[data-compact='true'] .modern-agent:hover { width: 260px; }
 :root[data-design='modern'] .modern-graph-viewport[data-compact='true'] .modern-branch-toggle { left: 248px; }
 @container modern-run (max-width: 620px) {
@@ -461,3 +470,27 @@ body.is-resizing-sidebar, body.is-resizing-sidebar * { cursor: col-resize !impor
 :root[data-design='modern'] .header-settings .appearance-toggle::before { color: var(--dashboard-accent); font-size: 15px; line-height: 1; }
 :root[data-design='modern'] .header-settings .theme-toggle::before { content: '◈'; }
 :root[data-design='modern'] .header-settings .colors-toggle::before { content: '◐'; }
+
+/* A newly completed workspace stays in place briefly before entering history. */
+.modern-completion-notice { padding: 7px 10px; border: 1px solid var(--green); color: var(--vscode-foreground); background: color-mix(in srgb, var(--green) 18%, var(--dashboard-card)); white-space: nowrap; }
+:root[data-design='modern'] .modern-run[data-completion-held='true'] { animation: workspace-completed-pulse 2s ease-in-out infinite; }
+@keyframes workspace-completed-pulse {
+  0%, 100% { border-color: var(--border); box-shadow: 0 0 0 0 transparent; }
+  50% { border-color: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 24%, transparent); }
+}
+
+/* Draw attention to workspaces in the brief completion transition. */
+:root[data-design='modern'] .dashboard-header .metric.metric-finishing[data-active='true'] {
+  width: calc(100% + 16px); margin: -4px -8px; padding: 6px 8px; border: 0;
+  box-shadow: inset 3px 0 var(--green);
+  background: color-mix(in srgb, var(--green) 18%, var(--dashboard-sidebar));
+  color: var(--vscode-foreground);
+}
+:root[data-design='modern'] .dashboard-header .metric.metric-finishing[data-active='true'] > span,
+:root[data-design='modern'] .dashboard-header .metric.metric-finishing[data-active='true'] strong { color: var(--vscode-foreground); font-weight: 750; }
+:root[data-design='modern'][data-dashboard-theme='chamfered'] .dashboard-header .metric.metric-finishing[data-active='true'] { clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px)); }
+
+:root[data-design='modern'] .dashboard-header .metric-finishing { width: 100%; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+:root[data-design='modern'] .dashboard-header .metric-finishing:disabled { opacity: 1; cursor: default; }
+:root[data-design='modern'] .dashboard-header .metric-finishing:not(:disabled):hover { filter: brightness(1.1); }
+:root[data-design='modern'] .dashboard-header .metric-finishing:focus-visible { outline: 2px solid var(--vscode-focusBorder); outline-offset: 2px; }

@@ -23,6 +23,10 @@
   const preferences = window.agentobsPreferences.createPreferenceStore(storage);
   let saved = preferences.get();
   const snapshotGate = window.agentobsSnapshot.createSnapshotGate();
+  let sessionStore;
+  try { sessionStore = sessionStorage; } catch { sessionStore = { getItem: () => null, setItem: () => {} }; }
+  const completionHold = window.agentobsCompletionHold.createCompletionHold(sessionStore, window.agentobsSelectors);
+  let completionTimer;
   let model, selected, source, ready = false, lastReceived, freshnessTimer, observationError;
   let workspace = saved.workspace, compact = saved.compactDensity;
   const persist = () => { saved = preferences.set({ ...saved, workspace, compactDensity: compact }); };
@@ -129,7 +133,10 @@
       return { ...manuallyArchive(root), manuallyCompleted: true };
     });
     if (changed) persist();
-    const { forest, memberIds, contextIds } = window.agentobsSelectors.projectWorkspace(presented, workspace);
+    const held = completionHold.update(presented, Date.now(), (model.finishingDurationSeconds ?? 30) * 1000);
+    clearTimeout(completionTimer);
+    if (held.nextExpiry !== undefined) completionTimer = setTimeout(() => emit(), Math.max(0, held.nextExpiry - Date.now()));
+    const { forest, memberIds, contextIds } = window.agentobsSelectors.projectWorkspace(held.forest, workspace);
     const agents = Object.create(null);
     const visit = node => { agents[node.id] = node; node.children.forEach(visit); };
     forest.forEach(visit);
@@ -145,7 +152,11 @@
     const live = agents.filter(agent => ['working', 'tool', 'starting'].includes(agent.displayState) && !agent.archived).length;
     text('metric-live', live);
     text('metric-attention', agents.filter(agent => agent.needsAttention).length);
-    text('metric-workspaces', forest.filter(window.agentobsSelectors.hasLive).length);
+    text('metric-workspaces', forest.filter(root => !root.completionHeld && window.agentobsSelectors.hasLive(root)).length);
+    const finishing = forest.filter(root => root.completionHeld).length;
+    text('metric-finishing', finishing);
+    $('metric-finishing').parentElement.dataset.active = String(finishing > 0);
+    $('metric-finishing').parentElement.disabled = finishing === 0;
     text('metric-tools-running', agents.filter(agent => agent.currentTool?.status === 'in_progress' && !agent.observationStale).length);
     for (const [field, id, label] of [['input', 'in', 'Input'], ['cachedInput', 'cache', 'Cached input'], ['output', 'out', 'Output']]) {
       const counts = agents.map(agent => agent.tokenUsage?.[field]).filter(Number.isFinite);
@@ -283,6 +294,6 @@
       else if (message.command === 'toggleDensity') { compact = !compact; persist(); emit(); }
     }
   };
-  window.addEventListener('pagehide', () => { source?.close(); clearInterval(freshnessTimer); });
+  window.addEventListener('pagehide', () => { source?.close(); clearInterval(freshnessTimer); clearTimeout(completionTimer); });
   window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 })();

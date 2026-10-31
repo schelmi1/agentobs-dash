@@ -19,6 +19,7 @@
   <script defer src="/preferences.js"></script>
   <script defer src="/snapshot.js"></script>
   <script defer src="/selectors.js"></script>
+  <script defer src="/completion-hold.js"></script>
   <script defer src="/dom.js"></script>
   <script defer src="/inspector.js"></script>
   <script defer src="/agent-views.js"></script>
@@ -62,6 +63,7 @@
           <div class="metric-grid">
             <div class="metric" title="Agents working across your root"><span>LIVE AGENTS <span class="metric-dot green"></span></span><strong id="metric-live">—</strong></div>
             <div class="metric" title="Input requests, failures, or quiet activity"><span>NEEDS ATTENTION <span class="metric-dot amber"></span></span><strong id="metric-attention">—</strong></div>
+            <button type="button" class="metric metric-finishing" data-active="false" title="Show workspaces moving to history" aria-controls="finishing-queue" aria-expanded="false" disabled><span>FINISHING</span><strong id="metric-finishing">—</strong></button>
             <div class="metric" title="Live workspace cards in the selected scope"><span>ACTIVE WORKSPACES</span><strong id="metric-workspaces">—</strong></div>
             <div class="metric metric-tools-running" title="Tools currently running in the selected workspace scope"><span>TOOLS RUNNING</span><strong id="metric-tools-running">—</strong></div>
             <div class="metric metric-token-usage"><div class="metric-token-heading"><span>TOKENS</span><button class="token-help" type="button" popovertarget="token-explanation" aria-label="About token totals">?</button></div><dl id="metric-tokens" class="metric-token-values" aria-label="Observed token usage" data-token-hint="Cached input is included in input. Missing values are excluded."><div><dt>In</dt><dd id="metric-tokens-in">—</dd></div><div><dt>Cached</dt><dd id="metric-tokens-cache">—</dd></div><div><dt>Out</dt><dd id="metric-tokens-out">—</dd></div></dl></div>

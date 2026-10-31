@@ -15,6 +15,11 @@
     scope.append(make('p', 'settings-meta', 'Active: ' + data.root.active + ' · ' + data.root.source));
     if (data.root.overridden) scope.append(make('p', 'settings-notice', 'A command-line root takes precedence. To use a saved root, restart from the launch folder shown below without a root argument.'));
     scope.append(make('p', 'settings-help', 'Settings are stored for the launch folder: ' + data.root.configRoot)); content.append(scope);
+    const finishing = make('section', 'settings-section');
+    finishing.append(make('h3', '', 'Finishing workspaces'), make('p', 'settings-help', 'Keep newly completed workspaces visible before moving them to history. Set to 0 to move them immediately.'));
+    const durationLabel = make('label', 'settings-label', 'Duration (seconds)'); durationLabel.htmlFor = 'settings-finishing-duration';
+    const duration = make('input', 'settings-finishing-duration'); duration.id = durationLabel.htmlFor; duration.type = 'number'; duration.min = '0'; duration.max = '3600'; duration.step = '1'; duration.required = true; duration.value = data.finishingDurationSeconds ?? 30;
+    finishing.append(durationLabel, duration); content.append(finishing);
     for (const provider of data.providers) {
       const section = make('section', 'settings-section'); const heading = make('div', 'settings-provider-heading');
       heading.append(make('h3', '', provider.label)); const mode = make('select'); mode.setAttribute('aria-label', provider.label + ' storage mode');
@@ -53,7 +58,7 @@
     for (const [key, entry] of rows) providers[key] = entry.mode.value === 'auto' ? null : entry.mode.value === 'disabled' ? [] : [...entry.list.querySelectorAll('input')].map(input => input.value.trim()).filter(Boolean);
     if ([...rows.values()].some(entry => entry.mode.value === 'custom' && ![...entry.list.querySelectorAll('input')].some(input => input.value.trim()))) { result.textContent = 'Enter at least one path, or select Disabled.'; save.disabled = false; return; }
     try {
-      const response = await fetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ monitoredRoot: root === settings.root.configRoot ? null : root, providers }) });
+      const response = await fetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ monitoredRoot: root === settings.root.configRoot ? null : root, providers, finishingDurationSeconds: Number(get('settings-finishing-duration').value) }) });
       const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Settings could not be saved.');
       const unavailable = Object.values(data.statuses).flat().filter(item => item.status !== 'ready');
       result.textContent = 'Saved. Restart the dashboard to apply changes.' + (unavailable.length ? ` ${unavailable.length} path(s) are missing or unreadable.` : '');

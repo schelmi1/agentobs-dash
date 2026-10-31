@@ -1,7 +1,7 @@
 (function (root) {
   'use strict';
   const flatten = (nodes) => nodes.flatMap((node) => [node, ...flatten(node.children)]);
-  // layoutHeld is supplied only by the demo's workspace-placement experiment.
+  // layoutHeld retains a completed workspace temporarily without changing agent status.
   const hasLive = (node) => Boolean(node.layoutHeld) || !node.archived || node.children.some(hasLive);
   const hasHistoryGroup = (node, group) => node.historyGroup === group || node.children.some(child => hasHistoryGroup(child, group));
   const historyGroupFor = node => hasHistoryGroup(node, 'quiet') ? 'quiet' : hasHistoryGroup(node, 'inactive') ? 'inactive' : 'completed';

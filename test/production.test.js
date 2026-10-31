@@ -213,3 +213,34 @@ test('completed concurrent Codex calls release correlation state across long run
     const scan = await adapter.scan(); assert.equal(scan.unreadable, 0); assert.equal(scan.sessions[0].toolHistory.length, 100); assert.equal(scan.sessions[0].currentTool, undefined);
   }
 });
+
+test('Codex discovery favors a recently modified old transcript over newer historical filenames', async t => {
+  const root = await fixture(t), codex = require('../lib/harnesses/codex');
+  const oldDir = path.join(root, '2024'), recentDir = path.join(root, '2026');
+  await fs.mkdir(oldDir); await fs.mkdir(recentDir);
+  const old = path.join(oldDir, 'rollout-old.jsonl'), recent = path.join(recentDir, 'rollout-new.jsonl');
+  const records = id => JSON.stringify({ type: 'session_meta', payload: { id, cwd: root, cli_version: '0.166.0' } }) + '\n' + JSON.stringify({ type: 'event_msg', payload: { type: 'task_started' } }) + '\n';
+  await fs.writeFile(old, records('active-old')); await fs.writeFile(recent, records('historical-new'));
+  const now = Date.now() / 1000; await fs.utimes(old, now, now); await fs.utimes(recent, now - 3600, now - 3600);
+  const adapter = codex.create({ roots: [root], limits: { maxFiles: 1 } }); t.after(() => adapter.close());
+  const result = await adapter.scan();
+  assert.equal(result.sessions[0]?.id, 'active-old', 'recent activity takes priority even in an older date directory');
+  assert.equal(result.sessions[0]?.status, 'active');
+});
+
+test('Codex loads recently active work before large older history and eventually loads both', async t => {
+  const root = await fixture(t), codex = require('../lib/harnesses/codex');
+  const active = path.join(root, 'rollout-older-name.jsonl'), history = path.join(root, 'rollout-newer-name.jsonl');
+  const records = id => JSON.stringify({ type: 'session_meta', payload: { id, cwd: root, cli_version: '0.166.0' } }) + '\n' + JSON.stringify({ type: 'event_msg', payload: { type: 'task_started' } }) + '\n';
+  await fs.writeFile(active, records('active'));
+  await fs.writeFile(history, records('history') + (JSON.stringify({ type: 'event_msg', payload: { type: 'unrelated', text: 'x'.repeat(300) } }) + '\n').repeat(30));
+  const now = Date.now() / 1000; await fs.utimes(active, now, now); await fs.utimes(history, now - 3600, now - 3600);
+  const adapter = codex.create({ roots: [root], limits: { maxReadBytesPerScan: 2048 } }); t.after(() => adapter.close());
+  const first = await adapter.scan();
+  assert.ok(first.sessions.some(session => session.id === 'active'), 'active workspace appears in the first scan');
+  assert.ok(!first.sessions.some(session => session.id === 'history'), 'older history continues loading in the background');
+  let result = first;
+  for (let i = 0; i < 20 && result.deferredFiles; i++) result = await adapter.scan();
+  assert.deepEqual(result.sessions.map(session => session.id).sort(), ['active', 'history']);
+  assert.equal(result.deferredFiles || 0, 0, 'background loading eventually completes');
+});

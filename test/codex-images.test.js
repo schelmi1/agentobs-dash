@@ -118,3 +118,64 @@ test('image projection keeps inherited-history ordinals and child lifecycle inta
   assert.equal(result.sessions[0].currentTool.id, 'child-tool');
   assert.equal(result.sessions[0].status, 'waiting');
 });
+
+test('a Codex transcript larger than 128 MiB loads across bounded scans and remains live after appends', async t => {
+  const { root, file } = await fixture(t);
+  const handle = await fs.open(file, 'w');
+  try {
+    await handle.write(start(root));
+    const filler = row('event_msg', { type: 'unrelated', text: 'x'.repeat(1024 * 1024) });
+    for (let i = 0; i < 129; i++) await handle.write(filler);
+    await handle.write(row('response_item', { type: 'custom_tool_call', name: 'apply_patch', call_id: 'latest' }));
+  } finally { await handle.close(); }
+  const { resolveConfig } = require('../lib/config');
+  const config = await resolveConfig(root, { port: 0, sessionRoots: [root], copilotRoots: [], claudeRoots: [], opencodeRoots: [] });
+  const observer = new Observer(config); t.after(() => observer.close());
+  let result, attempts = 0, bytesRead = 0;
+  while (attempts++ < 30) {
+    result = await observer.scan();
+    assert.equal(result.unreadableFiles, 0, 'bounded loading is not a read failure');
+    if (result.loadingFileProgress) { assert.ok(result.loadingFileProgress.bytesRead >= bytesRead, 'byte progress does not go backwards'); bytesRead = result.loadingFileProgress.bytesRead; }
+    assert.ok(!(result.health.fileIssues || []).some(issue => issue.code === 'FILE_LIMIT'), 'large Codex files must not be rejected');
+    if (Object.values(result.agents).some(session => session.shortId === 'main')) break;
+  }
+  const session = Object.values(result.agents).find(item => item.shortId === 'main');
+  assert.ok(session, 'main session appears after bounded loading using resolved configuration');
+  assert.equal(session.displayState, 'tool'); assert.equal(session.currentTool.name, 'apply_patch');
+  assert.ok(attempts > 1, 'large transcript is read over multiple scans');
+  await fs.appendFile(file, row('event_msg', { type: 'task_complete' }));
+  const updated = await observer.scan();
+  assert.equal(Object.values(updated.agents).find(item => item.shortId === 'main')?.displayState, 'completed', 'new records update the cached transcript');
+});
+
+test('Codex loads a 24 MiB transcript without being throttled to an 8 MiB scan', async t => {
+  const { root, file } = await fixture(t);
+  const handle = await fs.open(file, 'w');
+  try {
+    await handle.write(start(root));
+    const filler = row('event_msg', { type: 'unrelated', text: 'x'.repeat(1024 * 1024) });
+    for (let i = 0; i < 24; i++) await handle.write(filler);
+    await handle.write(row('response_item', { type: 'custom_tool_call', name: 'apply_patch', call_id: 'latest' }));
+  } finally { await handle.close(); }
+  const adapter = create({ roots: [root] }); t.after(() => adapter.close());
+  const result = await adapter.scan();
+  assert.equal(result.deferredFiles || 0, 0, 'ordinary-sized transcript should finish in the first scan');
+  assert.equal(result.sessions.find(session => session.id === 'main')?.currentTool.name, 'apply_patch');
+});
+
+test('a very large recently changed transcript does not delay other recent workspaces', async t => {
+  const { root, file } = await fixture(t), small = path.join(root, 'rollout-other.jsonl');
+  const records = id => row('session_meta', { id, cwd: root, cli_version: '0.166.0' }) + row('event_msg', { type: 'task_started' });
+  await fs.writeFile(small, records('small'));
+  const handle = await fs.open(file, 'w');
+  try {
+    await handle.write(records('large'));
+    const filler = row('event_msg', { type: 'unrelated', text: 'x'.repeat(1024 * 1024) });
+    for (let i = 0; i < 65; i++) await handle.write(filler);
+  } finally { await handle.close(); }
+  const now = Date.now() / 1000; await fs.utimes(small, now - 5, now - 5); await fs.utimes(file, now, now);
+  const adapter = create({ roots: [root] }); t.after(() => adapter.close());
+  const result = await adapter.scan();
+  assert.ok(result.sessions.some(session => session.id === 'small'), 'another recent workspace is visible on the first scan');
+  assert.ok(result.deferredFiles > 0, 'the large transcript continues loading');
+});
