@@ -18,6 +18,25 @@ async function main() {
     browser = await chromium.launch({ ...(process.env.CHROME_BIN ? { executablePath: process.env.CHROME_BIN } : {}), args: ['--no-sandbox'] });
     const page = await browser.newPage();
     const errors = []; page.on('pageerror', error => errors.push(error.message));
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(url); await page.waitForSelector('.modern-agent');
+    const edge = page.getByRole('separator', { name: 'Resize sidebar' });
+    const initial = await page.locator('.dashboard-header').boundingBox();
+    await page.mouse.move(initial.x + initial.width - 1, 300); await page.mouse.down();
+    await page.mouse.move(initial.x + initial.width + 99, 300, { steps: 5 }); await page.mouse.up();
+    assert.ok(Math.abs((await page.locator('.dashboard-header').boundingBox()).width - 340) <= 2, 'dragging the sidebar edge changes its width');
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('agentobs.preferences')).sidebarWidth), 340);
+    await page.reload(); await page.waitForSelector('.modern-agent');
+    assert.equal(Math.round((await page.locator('.dashboard-header').boundingBox()).width), 340, 'sidebar width survives reload');
+    await edge.focus(); await page.keyboard.press('End');
+    assert.equal(Math.round((await page.locator('.dashboard-header').boundingBox()).width), 480, 'keyboard resize respects the maximum');
+    await page.setViewportSize({ width: 800, height: 900 });
+    assert.equal(Math.round((await page.locator('.dashboard-header').boundingBox()).width), 440, 'narrow windows clamp width to leave workspace space');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    assert.equal(Math.round((await page.locator('.dashboard-header').boundingBox()).width), 480, 'returning to a wide window restores the saved width');
+    await edge.focus(); await page.keyboard.press('Home');
+    assert.equal(Math.round((await page.locator('.dashboard-header').boundingBox()).width), 190, 'keyboard resize respects the minimum');
+    await page.evaluate(() => localStorage.removeItem('agentobs.preferences'));
     for (const [width, height] of [[1440, 900], [1024, 600], [768, 1024], [390, 844], [320, 568], [844, 390]]) {
       await page.setViewportSize({ width, height });
       await page.goto(url); await page.waitForSelector('.modern-agent');

@@ -17,7 +17,7 @@ async function main() {
     page.on('pageerror', error => errors.push(error.message)); await page.goto(url);
     await page.waitForFunction(() => document.querySelectorAll('.modern-graph-viewport').length === 2);
     for (const mode of ['cards', 'compact']) {
-      if (mode === 'compact') await page.getByRole('button', { name: 'Compact', exact: true }).click();
+      if (mode === 'compact') await page.locator('.modern-run').first().getByRole('button', { name: 'Compact', exact: true }).click();
       const views = page.locator('.modern-graph-viewport'); const first = views.first(), second = views.nth(1);
       const otherZoom = await second.locator('.modern-graph').evaluate(node => node.style.transform);
       const box = await first.boundingBox(); await page.mouse.move(box.x + box.width - 35, box.y + 35);

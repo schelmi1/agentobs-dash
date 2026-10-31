@@ -9,11 +9,12 @@
   const tokenCount = value => Number.isFinite(value) ? tokenFormatter.format(value).toLowerCase() : '—';
   const { themes, colors, normalizeAppearance, applyAppearance, createPicker } = window.agentobsThemes;
   const savedInspectorWidth = Number.isFinite(saved.inspectorWidth) && saved.inspectorWidth >= 220 && saved.inspectorWidth <= 480 ? Math.round(saved.inspectorWidth) : undefined;
-  const ui = { search: saved.search || '', runKey: saved.runKey || '', attentionOnly: Boolean(saved.attentionOnly), collapsed: new Set(saved.collapsed || []), expandedCompleted: new Set(saved.expandedCompleted || []), shownCompleted: new Set(saved.shownCompleted || []), modernExpandedCompleted: new Set(saved.modernExpandedCompleted || []), inspectorWidth: savedInspectorWidth, ...normalizeAppearance(saved), modernWorkspaceArrangement: saved.modernWorkspaceArrangement, modernSwarm: saved.modernSwarm, modernHideCompletedRuns: new Set(saved.modernHideCompletedRuns || []), modernWorkspaceSizes: saved.modernWorkspaceSizes || {}, selected: undefined };
+  const ui = { search: saved.search || '', runKey: saved.runKey || '', attentionOnly: Boolean(saved.attentionOnly), collapsed: new Set(saved.collapsed || []), expandedCompleted: new Set(saved.expandedCompleted || []), shownCompleted: new Set(saved.shownCompleted || []), modernExpandedCompleted: new Set(saved.modernExpandedCompleted || []), inspectorWidth: savedInspectorWidth, ...normalizeAppearance(saved), modernWorkspaceArrangement: saved.modernWorkspaceArrangement, modernSwarmRuns: new Set(saved.modernSwarmRuns || []), modernHideCompletedRuns: new Set(saved.modernHideCompletedRuns || []), modernWorkspaceSizes: saved.modernWorkspaceSizes || {}, selected: undefined };
   const labels = { working: 'Working', tool: 'Running tool', input: 'Needs input', starting: 'Starting', quiet: 'Quiet', failed: 'Failed', interrupted: 'Interrupted', completed: 'Completed', unknown: 'Unknown' };
   let state;
   let lastHostSelection;
-  const persist = () => host.setState({ search: ui.search, runKey: ui.runKey, attentionOnly: ui.attentionOnly, collapsed: [...ui.collapsed], expandedCompleted: [...ui.expandedCompleted], shownCompleted: [...ui.shownCompleted], modernExpandedCompleted: [...ui.modernExpandedCompleted], inspectorWidth: ui.inspectorWidth, modernWorkspaceArrangement: ui.modernWorkspaceArrangement, modernSwarm: ui.modernSwarm, modernHideCompletedRuns: [...ui.modernHideCompletedRuns], modernWorkspaceSizes: ui.modernWorkspaceSizes, design: ui.design, theme: ui.theme, colors: ui.colors });
+  let migrateLegacySwarm = saved.modernSwarm;
+  const persist = () => host.setState({ search: ui.search, runKey: ui.runKey, attentionOnly: ui.attentionOnly, collapsed: [...ui.collapsed], expandedCompleted: [...ui.expandedCompleted], shownCompleted: [...ui.shownCompleted], modernExpandedCompleted: [...ui.modernExpandedCompleted], inspectorWidth: ui.inspectorWidth, modernWorkspaceArrangement: ui.modernWorkspaceArrangement, modernSwarm: false, modernSwarmRuns: [...ui.modernSwarmRuns], modernHideCompletedRuns: [...ui.modernHideCompletedRuns], modernWorkspaceSizes: ui.modernWorkspaceSizes, design: ui.design, theme: ui.theme, colors: ui.colors });
   const badge = (agent) => element('span', 'status status-' + agent.displayState, labels[agent.displayState]);
   const welcomePreview = () => {
     const welcome = element('section', 'empty empty-welcome', undefined, 'welcome');
@@ -365,7 +366,7 @@
     previewNode = undefined; swarmPreview.hidden = true; swarmPreview.replaceChildren();
   };
   const showSwarmPreview = node => {
-    if (!ui.modernSwarm || !node?.isConnected || !node.closest('.modern-graph-viewport[data-swarm="true"]')) { hideSwarmPreview(); return; }
+    if (!node?.isConnected || !node.closest('.modern-graph-viewport[data-swarm="true"]')) { hideSwarmPreview(); return; }
     if (previewNode !== node) hideSwarmPreview();
     previewNode = node;
     node.closest('.modern-graph-viewport').querySelectorAll('.modern-links path').forEach(line => line.classList.toggle('is-hovered', line.dataset.parentId === node.dataset.key || line.dataset.childId === node.dataset.key));
@@ -420,19 +421,16 @@
     fitWorkspaces.setAttribute('aria-label', 'Fit all workspaces');
     fitWorkspaces.title = 'Reset workspace sizes to fit the selected arrangement';
     arrangement.append(fitWorkspaces);
-    const swarmToggle = button('Compact', 'toolbar-button modern-arrangement-button modern-swarm-toggle', () => { ui.modernSwarm = !ui.modernSwarm; hideSwarmPreview(); persist(); renderContent(); });
-    swarmToggle.setAttribute('aria-pressed', String(ui.modernSwarm));
-    swarmToggle.setAttribute('aria-description', 'Show agents as a compact status network; hover or focus a node for its card.');
-    swarmToggle.title = 'Show the compact agent network'; arrangement.append(swarmToggle);
     intro.append(arrangement); if (showControls) board.append(intro);
     const runs = element('div', 'modern-runs', undefined, 'modern-runs');
     runs.dataset.arrangement = ui.modernWorkspaceArrangement;
     runs.style.setProperty('--modern-columns', String(Math.min(4, Math.max(1, roots.length))));
     for (const root of roots) {
       modernGraphIsCompact = modernCompactFor(roots.length, root.id);
+      const isSwarm = ui.modernSwarmRuns.has(root.id);
       const family = flatten([root]);
       const hideCompletedAgents = ui.modernHideCompletedRuns.has(root.id);
-      const largeCards = !ui.modernSwarm && family.length >= 300;
+      const largeCards = !isSwarm && family.length >= 300;
       const nodeHeight = largeCards ? 204 : state.compactDensity ? 136 : 164;
       const rowPitch = nodeHeight + 28;
       const horizontalColumns = modernColumnsFor(roots.length, root.id, largeCards);
@@ -459,8 +457,15 @@
       heading.append(totals);
       const runInfo = element('div', 'modern-run-info');
       if (historyGroup) runInfo.append(element('span', 'modern-history-state', root.manuallyCompleted ? 'Moved to history' : historyGroup === 'completed' ? 'Completed' : historyGroup === 'inactive' ? 'Inactive' : 'Quiet'));
-      runInfo.append(element('span', 'modern-run-count', family.length + ' agent' + (family.length === 1 ? '' : 's')),
-        element('span', needsAttention ? 'modern-attention' : 'modern-clear', root.manuallyCompleted ? 'Attention deferred' : needsAttention ? needsAttention + ' need attention' : 'No attention needed'));
+      runInfo.append(element('span', 'modern-run-count', family.length + ' agent' + (family.length === 1 ? '' : 's')));
+      if (root.manuallyCompleted || needsAttention) runInfo.append(element('span', 'modern-attention', root.manuallyCompleted ? 'Attention deferred' : needsAttention + ' need attention'));
+      const swarmToggle = button('Compact', 'toolbar-button modern-swarm-toggle', () => {
+        if (isSwarm) ui.modernSwarmRuns.delete(root.id); else ui.modernSwarmRuns.add(root.id);
+        hideSwarmPreview(); persist(); renderContent();
+      });
+      swarmToggle.setAttribute('aria-pressed', String(isSwarm));
+      swarmToggle.setAttribute('aria-description', 'Show this workspace as a compact status network; hover or focus a node for details.');
+      swarmToggle.title = 'Toggle the compact network for this workspace'; runInfo.append(swarmToggle);
       if (root.manuallyCompleted) {
         const restore = button('Restore', 'toolbar-button modern-restore-run', () => host.postMessage({ command: 'restoreAttentionWorkspace', runKey: root.id }));
         restore.setAttribute('aria-label', 'Restore workspace ' + root.title); restore.title = 'Return this workspace to its observed state'; runInfo.append(restore);
@@ -478,16 +483,14 @@
       runToggle.setAttribute('aria-label', (runCollapsed ? 'Expand run ' : 'Collapse run ') + root.title);
       runToggle.setAttribute('aria-expanded', String(!runCollapsed));
       if (!runCollapsed) {
-        if (ui.modernSwarm) {
-          const hideCompleted = button('Hide completed agents', 'toolbar-button modern-hide-completed', () => {
-            if (ui.modernHideCompletedRuns.has(root.id)) ui.modernHideCompletedRuns.delete(root.id); else ui.modernHideCompletedRuns.add(root.id);
-            hideSwarmPreview(); persist(); renderContent();
-          });
-          hideCompleted.setAttribute('aria-pressed', String(hideCompletedAgents));
-          hideCompleted.setAttribute('aria-label', 'Hide completed agents in ' + root.title);
-          hideCompleted.title = 'Hide completed agents in this workspace; retain ancestors of unfinished agents';
-          runInfo.append(hideCompleted);
-        }
+        const hideCompleted = button('Hide completed agents', 'toolbar-button modern-hide-completed', () => {
+          if (ui.modernHideCompletedRuns.has(root.id)) ui.modernHideCompletedRuns.delete(root.id); else ui.modernHideCompletedRuns.add(root.id);
+          hideSwarmPreview(); persist(); renderContent();
+        });
+        hideCompleted.setAttribute('aria-pressed', String(hideCompletedAgents));
+        hideCompleted.setAttribute('aria-label', 'Hide completed agents in ' + root.title);
+        hideCompleted.title = 'Hide completed agents in this workspace; retain ancestors of unfinished agents';
+        runInfo.append(hideCompleted);
         const fit = button('Fit', 'toolbar-button modern-fit', event => {
           const panel = event.currentTarget.closest('.modern-run');
           if (largeCards) {
@@ -504,10 +507,10 @@
       header.append(heading, runInfo); run.append(header);
       if (runCollapsed) { runs.append(run); continue; }
       const graphHeader = element('div', 'modern-graph-header');
-      const graphInfo = element('span', '', family.length + ' agent' + (family.length === 1 ? '' : 's') + (ui.modernSwarm ? ' · hover or focus a node for details · ' : ' · ') + 'drag to zoom · middle-drag to pan · Alt + wheel to zoom · double-click to reset');
-      graphHeader.append(element('span', '', ui.modernSwarm ? 'COMPACT NETWORK' : 'DELEGATION NETWORK'), graphInfo);
+      const graphInfo = element('span', '', family.length + ' agent' + (family.length === 1 ? '' : 's') + (isSwarm ? ' · hover or focus a node for details · ' : ' · ') + 'drag to zoom · middle-drag to pan · Alt + wheel to zoom · double-click to reset');
+      graphHeader.append(element('span', '', isSwarm ? 'COMPACT NETWORK' : 'DELEGATION NETWORK'), graphInfo);
       run.append(graphHeader);
-      if (ui.modernSwarm) {
+      if (isSwarm) {
         const legend = element('div', 'modern-swarm-legend'); legend.setAttribute('aria-label', 'Agent activity and status key');
         for (const [status, label] of [['tool', 'Current tool color'], ['working', 'Thinking'], ['input', 'Needs input / starting'], ['failed', 'Failed / interrupted'], ['completed', 'Completed'], ['other', 'Other']]) {
           const entry = element('span', 'modern-swarm-key'); entry.append(element('span', 'modern-swarm-symbol is-' + status), document.createTextNode(label)); legend.append(entry);
@@ -526,7 +529,7 @@
       viewport.dataset.runCount = String(roots.length);
       if (workspaceSize?.height) { viewport.style.height = workspaceSize.height + 'px'; viewport.style.maxHeight = 'none'; }
       viewport.dataset.compact = String(modernGraphIsCompact);
-      viewport.dataset.swarm = String(ui.modernSwarm);
+      viewport.dataset.swarm = String(isSwarm);
       viewport.dataset.largeCards = String(largeCards);
       viewport.dataset.columns = String(horizontalColumns);
       viewport.tabIndex = 0; viewport.setAttribute('role', 'region'); viewport.setAttribute('aria-label', 'Delegation network for ' + root.title + ', scroll to explore'); viewport.setAttribute('aria-description', 'Drag a box to zoom; middle-drag to pan; Alt and mouse wheel zooms around the pointer. Double-click the background or focus the graph and press zero to reset.');
@@ -564,17 +567,18 @@
         const autoCollapsed = largeCards && depth > 0 && !ui.search.trim() && !ui.attentionOnly && !modernExpandedLarge.has(agent.id);
         if (filtering && (!largeCards || ui.search.trim() || ui.attentionOnly) || !modernCollapsed.has(agent.id) && !autoCollapsed) {
           const groups = subagentGroups(agent, state.agents);
-          const children = filtering || ui.modernSwarm || ui.modernExpandedCompleted.has(agent.id) ? agent.children : groups.active;
-          for (const child of children) if (!(ui.modernSwarm && hideCompletedAgents && completedBranch(state.agents[child.id] || child))) add(child, depth + 1, { ...position, id: agent.id, name: agent.name || 'Agent' });
+          const children = filtering || isSwarm || ui.modernExpandedCompleted.has(agent.id) ? agent.children : groups.active;
+          for (const child of children) if (!(hideCompletedAgents && completedBranch(state.agents[child.id] || child))) add(child, depth + 1, { ...position, id: agent.id, name: agent.name || 'Agent' });
         }
       };
-      if (!(ui.modernSwarm && hideCompletedAgents && completedBranch(state.agents[root.id] || root))) add(root, 0);
+      // The main agent is the entry point to the workspace, even after completion.
+      add(root, 0);
       if (largeCards) graphInfo.textContent = positions.length + ' of ' + family.length + ' agents shown · expand branches to explore · drag to zoom · middle-drag to pan · Alt + wheel to zoom · double-click to reset';
-      if (ui.modernSwarm && hideCompletedAgents) graphInfo.textContent = positions.length + ' of ' + family.length + ' agents shown · hover or focus a node for details · drag to zoom · middle-drag to pan · Alt + wheel to zoom · double-click to reset';
+      if (hideCompletedAgents) graphInfo.textContent = positions.length + ' of ' + family.length + ' agents shown · ' + (isSwarm ? 'hover or focus a node for details · ' : '') + 'drag to zoom · middle-drag to pan · Alt + wheel to zoom · double-click to reset';
       const byId = new Map(positions.map(position => [position.agent.id, position]));
       let width = modernGraphIsCompact ? 16 + maxDepth * 16 + 278 : 28 + (maxDepth + 1) * 370;
       let height = (modernGraphIsCompact ? 24 : 28) + maxRow * rowPitch + nodeHeight + 28;
-      if (ui.modernSwarm) {
+      if (isSwarm) {
         // Reserve a 3×3 cell block for each L1 branch. Descendants use their
         // branch's cells before claiming another block, including when spawned
         // later; unrelated L1 agents cannot occupy that reserved space.
@@ -707,15 +711,15 @@
         height = Math.max(y - 40 + 28, 28 + nodeHeight + 28);
       }
       graph.style.width = width + 'px'; graph.style.height = height + 'px';
-      const zooms = ui.modernSwarm ? modernSwarmZoom : modernZoom;
-      const autoZoom = ui.modernSwarm ? Math.max(.2, Math.min(1, (modernWidthFor(roots.length, root.id) - 32) / width, ((workspaceSize?.height || (modernPhone.matches ? 674 : 464)) - 32) / height)) : 1;
+      const zooms = isSwarm ? modernSwarmZoom : modernZoom;
+      const autoZoom = isSwarm ? Math.max(.2, Math.min(1, (modernWidthFor(roots.length, root.id) - 32) / width, ((workspaceSize?.height || (modernPhone.matches ? 674 : 464)) - 32) / height)) : 1;
       const zoom = zooms.get(root.id) ?? autoZoom;
-      if (ui.modernSwarm && !zooms.has(root.id)) zooms.set(root.id, zoom);
-      if (ui.modernSwarm) viewport.style.setProperty('--swarm-zoom', String(zoom));
+      if (isSwarm && !zooms.has(root.id)) zooms.set(root.id, zoom);
+      if (isSwarm) viewport.style.setProperty('--swarm-zoom', String(zoom));
       graph.style.transform = `scale(${zoom})`;
       const space = element('div', 'modern-graph-space'); space.style.width = width * zoom + 'px'; space.style.height = height * zoom + 'px';
       svg.setAttribute('width', width); svg.setAttribute('height', height);
-      if (ui.modernSwarm) {
+      if (isSwarm) {
         const center = width / 2;
         for (const block of viewport.swarmClusterBlocks || []) {
           const outline = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -730,7 +734,7 @@
       for (const { agent, depth, parent, x, y } of positions) {
         if (parent) {
           const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          if (ui.modernSwarm) {
+          if (isSwarm) {
             const parentPosition = byId.get(parent.id);
             line.dataset.parentId = parent.id; line.dataset.childId = agent.id; line.dataset.level = String(depth);
             line.setAttribute('d', 'M ' + (parentPosition.x + 10) + ' ' + (parentPosition.y + 10) + ' L ' + (x + 10) + ' ' + (y + 10));
@@ -743,11 +747,11 @@
           if (lineage.has(agent.id)) line.classList.add('is-lineage');
           svg.append(line);
         }
-        const item = element('li', 'modern-item' + (ui.modernSwarm ? ' modern-swarm-item' : ''), undefined, 'modern-item:' + agent.id);
+        const item = element('li', 'modern-item' + (isSwarm ? ' modern-swarm-item' : ''), undefined, 'modern-item:' + agent.id);
         item.style.left = x + 'px'; item.style.top = y + 'px';
-        const card = button('', 'agent modern-agent' + (ui.modernSwarm ? ' modern-swarm-node' : '') + ' agent-' + (ui.modernSwarm && agent.observationStale ? 'unknown' : agent.displayState) + (ui.selected === agent.id ? ' selected' : ''), () => { modernToolAgents.set(root.id, agent.id); selectAgent(agent.id); });
-        card.dataset.key = agent.id; if (ui.modernSwarm) card.dataset.level = String(depth); card.setAttribute('aria-pressed', String(ui.selected === agent.id));
-        if (ui.modernSwarm && agent.currentTool?.status === 'in_progress' && !agent.observationStale) {
+        const card = button('', 'agent modern-agent' + (isSwarm ? ' modern-swarm-node' : '') + ' agent-' + (isSwarm && agent.observationStale ? 'unknown' : agent.displayState) + (ui.selected === agent.id ? ' selected' : ''), () => { modernToolAgents.set(root.id, agent.id); selectAgent(agent.id); });
+        card.dataset.key = agent.id; if (isSwarm) card.dataset.level = String(depth); card.setAttribute('aria-pressed', String(ui.selected === agent.id));
+        if (isSwarm && agent.currentTool?.status === 'in_progress' && !agent.observationStale) {
           card.classList.add('has-current-tool', window.agentobsViews.toolColorClass(agent.currentTool));
         }
         const name = agent.name || 'Agent', status = agent.observationStale ? 'Observation unavailable' : labels[agent.displayState] || 'Unknown';
@@ -775,7 +779,7 @@
         }
         card.append(footer); item.append(card); list.append(item);
         const completedGroup = subagentGroups(agent, state.agents);
-        if (!ui.modernSwarm && !filtering && !modernCollapsed.has(agent.id) && !closedLarge && completedGroup.completedCount) {
+        if (!isSwarm && !hideCompletedAgents && !filtering && !modernCollapsed.has(agent.id) && !closedLarge && completedGroup.completedCount) {
           const expanded = ui.modernExpandedCompleted.has(agent.id);
           const completed = button((expanded ? '▾ ' : '▸ ') + completedGroup.completedCount + ' completed', 'modern-completed-toggle', () => {
             if (expanded) ui.modernExpandedCompleted.delete(agent.id); else ui.modernExpandedCompleted.add(agent.id);
@@ -786,7 +790,7 @@
           completed.setAttribute('aria-label', (expanded ? 'Hide ' : 'Show ') + completedGroup.completedCount + ' completed agent' + (completedGroup.completedCount === 1 ? '' : 's') + ' under ' + agent.title);
           item.append(completed);
         }
-        if (agent.children.length && (!filtering || largeCards && !ui.search.trim() && !ui.attentionOnly) && (!ui.modernSwarm || modernCollapsed.has(agent.id))) {
+        if (agent.children.some(child => !hideCompletedAgents || !completedBranch(state.agents[child.id] || child)) && (!filtering || largeCards && !ui.search.trim() && !ui.attentionOnly) && (!isSwarm || modernCollapsed.has(agent.id))) {
           const closed = modernCollapsed.has(agent.id) || (largeCards && depth > 0 && !ui.search.trim() && !ui.attentionOnly && !modernExpandedLarge.has(agent.id)), count = flatten(agent.children).length;
           const toggle = button(closed ? '+' + count : '−', 'modern-branch-toggle', () => {
             if (closed) { modernCollapsed.delete(agent.id); modernExpandedLarge.add(agent.id); } else { modernCollapsed.add(agent.id); modernExpandedLarge.delete(agent.id); }
@@ -798,10 +802,6 @@
         }
       }
       graph.append(svg, list);
-      if (ui.modernSwarm && !positions.length) {
-        const noAgents = element('p', 'modern-swarm-empty', 'No unfinished agents in this run');
-        noAgents.setAttribute('role', 'status'); graph.append(noAgents);
-      }
       space.append(graph); viewport.append(space);
       const body = element('div', 'modern-run-body');
       const toolsPanel = element('aside', 'modern-tools-panel'); toolsPanel.setAttribute('aria-label', 'Recorded tool activity for ' + root.title);
@@ -1045,6 +1045,10 @@
     if (event.detail?.type !== 'render') return;
     const wasArchived = state?.agents[ui.selected]?.archived;
     state = event.detail.model;
+    if (migrateLegacySwarm) {
+      for (const root of state.forest) ui.modernSwarmRuns.add(root.id);
+      migrateLegacySwarm = false; persist();
+    }
     const selectionChanged = state.selectedAgentKey !== lastHostSelection;
     // Host provenance also identifies local echoes that arrive after another card click.
     const externalSelection = selectionChanged && event.detail.selectionSource !== 'map';

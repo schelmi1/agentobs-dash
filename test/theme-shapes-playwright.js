@@ -11,7 +11,7 @@ const { defaults } = require('../lib/config');
 async function main() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agentobs-theme-shapes-'));
   const session = (id, parentId) => ({ id, ...(parentId ? { parentId } : {}), currentTask: 'Observe the agent workflow: ' + id, agentName: id, cwd: root, provider: 'fixture', providerLabel: 'Fixture', status: 'active', hasLifecycle: true, lastActivity: new Date().toISOString() });
-  const sessions = [session('Coordinator'), session('Research', 'Coordinator'), session('Review', 'Coordinator'), session('Analysis', 'Research')];
+  const sessions = [session('Coordinator'), { ...session('Research', 'Coordinator'), needsInput: true }, session('Review', 'Coordinator'), session('Analysis', 'Research')];
   const config = { ...defaults, rootFolder: root, port: 0, pollIntervalMs: 500 };
   const dashboard = createDashboard(config, { observer: new Observer(config, [{ id: 'fixture', async scan() { return { sessions, sources: [], unreadable: 0 }; } }]) });
   let browser;
@@ -35,6 +35,12 @@ async function main() {
         assert.match(result.clip, /polygon/, design + ' chamfered card has cut corners');
         if (result.panel !== null) assert.equal(result.panel, '0px', design + ' chamfered workspace has sharp corners');
         assert.equal(result.control, '0px', design + ' chamfered control has sharp corners');
+        const headerShapes = await page.locator('.modern-run-info > *').evaluateAll(nodes => nodes.map(node => ({ name: node.className, clip: getComputedStyle(node).clipPath, radius: getComputedStyle(node).borderRadius })));
+        assert.ok(headerShapes.some(item => item.name.includes('modern-attention')), 'fixture exercises the attention badge');
+        assert.ok(headerShapes.every(item => item.radius === '0px' && item.clip.startsWith('polygon(')), 'all workspace header badges and actions have cut corners: ' + JSON.stringify(headerShapes));
+        await page.locator('.modern-run').getByRole('button', { name: 'Compact', exact: true }).click();
+        const hideShape = await page.locator('.modern-hide-completed').evaluate(node => ({ clip: getComputedStyle(node).clipPath, radius: getComputedStyle(node).borderRadius }));
+        assert.equal(hideShape.radius, '0px'); assert.match(hideShape.clip, /^polygon\(/, 'Compact-only action is chamfered');
       } else if (theme === 'terminal') {
         assert.equal(result.radius, '0px', design + ' terminal card is square');
         assert.equal(result.clip, 'none', design + ' terminal card is not chamfered');

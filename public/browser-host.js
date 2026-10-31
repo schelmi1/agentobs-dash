@@ -26,6 +26,42 @@
   let model, selected, source, ready = false, lastReceived, freshnessTimer, observationError;
   let workspace = saved.workspace, compact = saved.compactDensity;
   const persist = () => { saved = preferences.set({ ...saved, workspace, compactDensity: compact }); };
+  const sidebarResize = $('sidebar-resize');
+  const sidebarLimits = () => ({ min: 190, max: Math.max(190, Math.min(480, innerWidth - 360)) });
+  const syncSidebarWidth = () => {
+    const { min, max } = sidebarLimits();
+    const width = Math.min(max, Math.max(min, saved.sidebarWidth ?? 240));
+    document.documentElement.style.setProperty('--sidebar-width', width + 'px');
+    sidebarResize.setAttribute('aria-valuemin', String(min)); sidebarResize.setAttribute('aria-valuemax', String(max)); sidebarResize.setAttribute('aria-valuenow', String(width));
+  };
+  const setSidebarWidth = width => {
+    const { min, max } = sidebarLimits();
+    saved.sidebarWidth = Math.round(Math.min(max, Math.max(min, width)));
+    syncSidebarWidth();
+  };
+  let sidebarDrag;
+  sidebarResize.addEventListener('pointerdown', event => {
+    if (event.button !== 0 || matchMedia('(max-width: 760px)').matches) return;
+    sidebarDrag = { id: event.pointerId, x: event.clientX, width: header.getBoundingClientRect().width };
+    sidebarResize.setPointerCapture(event.pointerId); document.body.classList.add('is-resizing-sidebar'); event.preventDefault();
+  });
+  sidebarResize.addEventListener('pointermove', event => {
+    if (sidebarDrag?.id === event.pointerId) setSidebarWidth(sidebarDrag.width + event.clientX - sidebarDrag.x);
+  });
+  const finishSidebarResize = event => {
+    if (sidebarDrag?.id !== event.pointerId) return;
+    sidebarDrag = undefined; document.body.classList.remove('is-resizing-sidebar'); persist();
+  };
+  sidebarResize.addEventListener('pointerup', finishSidebarResize);
+  sidebarResize.addEventListener('pointercancel', finishSidebarResize);
+  sidebarResize.addEventListener('lostpointercapture', finishSidebarResize);
+  sidebarResize.addEventListener('keydown', event => {
+    const { min, max } = sidebarLimits(), current = header.getBoundingClientRect().width;
+    const next = event.key === 'ArrowLeft' ? current - 20 : event.key === 'ArrowRight' ? current + 20 : event.key === 'Home' ? min : event.key === 'End' ? max : undefined;
+    if (next === undefined) return;
+    setSidebarWidth(next); persist(); event.preventDefault();
+  });
+  window.addEventListener('resize', syncSidebarWidth); syncSidebarWidth();
   const shortCount = count => new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(count).toLowerCase();
   const text = (id, value) => { $(id).textContent = value; };
   const syncTokenHints = () => {

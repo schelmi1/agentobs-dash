@@ -88,7 +88,7 @@ async function main() {
     const wideDesign = await page.locator('.modern-agent', { hasText: 'Explore interface directions' }).boundingBox();
     assert.equal(wideResearch.y, wideDesign.y, 'wide workspace places sibling agents side by side');
     assert.ok(wideDesign.x + wideDesign.width <= wideResearch.x || wideResearch.x + wideResearch.width <= wideDesign.x, 'wide siblings use the available horizontal space');
-    const compactButton = page.getByRole('button', { name: 'Compact', exact: true });
+    const compactButton = primaryRun.getByRole('button', { name: 'Compact', exact: true });
     const checkBoxZoom = async label => {
       const viewport = primaryRun.locator('.modern-graph-viewport');
       await viewport.scrollIntoViewIfNeeded();
@@ -285,9 +285,9 @@ async function main() {
     await page.waitForTimeout(200);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no page-wide overflow on phone');
     assert.equal(await page.locator('.modern-state', { hasText: 'Needs input' }).isVisible(), true);
-    const phoneHeight = (await page.locator('.modern-agent').first().boundingBox()).height;
+    const phoneHeight = (await primaryRun.locator('.modern-agent').first().boundingBox()).height;
     await compactButton.click();
-    assert.ok((await page.locator('.modern-agent').first().boundingBox()).height < phoneHeight - 15, 'Compact shows swarm nodes on phone');
+    assert.ok((await primaryRun.locator('.modern-agent').first().boundingBox()).height < phoneHeight - 15, 'Compact shows swarm nodes on phone');
     const phonePanel = primaryRun.locator('.modern-tools-panel'), phoneSplit = primaryRun.getByRole('button', { name: 'Resize tool activity for Build the new customer onboarding experience' });
     const phoneToolHeight = await phonePanel.evaluate(node => node.getBoundingClientRect().height);
     await phoneSplit.focus(); await page.keyboard.press('ArrowUp');

@@ -24,6 +24,11 @@
 :root[data-dashboard-theme='chamfered'] :is(.modern-run-toggle, .modern-completed-toggle, .modern-calls-toggle, .modern-branch-toggle, .modern-nav-item, .modern-customize > summary, .modern-nav-count, .modern-state) {
   clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
 }
+/* Workspace header badges and actions share the same cut-corner treatment. */
+:root[data-design='modern'][data-dashboard-theme='chamfered'] .modern-run-info > :is(.modern-run-count, .modern-attention, .modern-history-state, .toolbar-button, .modern-run-toggle) {
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
 :root[data-dashboard-theme='chamfered'] :is(.modern-run) { border-left: 2px solid var(--dashboard-accent); }
 
 /* Terminal uses square surfaces. Status and dense-graph symbols retain their

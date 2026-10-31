@@ -133,8 +133,8 @@
 :root[data-design='modern'] .modern-tokens { letter-spacing: .03em; font-size: 9px; }
 @media all {
   :root[data-design='modern'] { scroll-padding-top: 18px; }
-  :root[data-design='modern'] .dashboard-shell { display: grid; grid-template-columns: 240px minmax(0, 1fr); align-items: start; }
-  :root[data-design='modern'] .dashboard-header { position: sticky; top: 0; width: 240px; height: 100vh; min-height: 0; border-right: 1px solid var(--border); border-bottom: 0; }
+  :root[data-design='modern'] .dashboard-shell { display: grid; grid-template-columns: min(var(--sidebar-width, 240px), calc(100vw - 360px)) minmax(0, 1fr); align-items: start; }
+  :root[data-design='modern'] .dashboard-header { position: sticky; top: 0; width: 100%; height: 100vh; min-height: 0; border-right: 1px solid var(--border); border-bottom: 0; }
   :root[data-design='modern'] .header-inner { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: 'identity' 'workspaces' 'overview' 'controls'; align-content: start; gap: 16px; padding: 24px 16px; }
   :root[data-design='modern'] .header-identity { display: flex; padding: 0 0 10px; border-bottom: 1px solid var(--border); }
   :root[data-design='modern'] .brand-mark { width: 38px; }
@@ -422,11 +422,15 @@
 
 /* Navigation is always a side rail. On narrow screens it opens over the page. */
 .sidebar-toggle, .sidebar-collapsed-mark { display: none; }
+.sidebar-resize { position: absolute; z-index: 2; top: 0; right: -5px; bottom: 0; width: 10px; cursor: col-resize; touch-action: none; }
+.sidebar-resize:focus-visible { outline: 2px solid var(--dashboard-accent); outline-offset: -2px; }
+body.is-resizing-sidebar, body.is-resizing-sidebar * { cursor: col-resize !important; user-select: none !important; }
 :root[data-design='modern'] .header-settings .appearance-label { display: inline; }
 :root[data-design='modern'] .workspace-menu { position: fixed; }
 :root[data-design='modern'] .dashboard-header .header-inner { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'identity' 'workspaces' 'navigation' 'overview' 'controls'; }
 :root[data-design='modern'] .inspector { top: 16px; }
 @media (max-width: 760px) {
+  .sidebar-resize { display: none; }
   :root[data-design='modern'] .dashboard-shell { grid-template-columns: 52px minmax(0, 1fr); }
   :root[data-design='modern'] .dashboard-header { width: 52px; height: 100dvh; }
   :root[data-design='modern'] .dashboard-header[data-rail-open='true'] { width: min(240px, calc(100vw - 52px)); box-shadow: 8px 0 24px #0008; }

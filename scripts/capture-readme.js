@@ -54,7 +54,7 @@ async function main() {
       await page.evaluate(() => window.scrollTo(0, 0));
       cardExample = false;
     }
-    await page.getByRole('button', { name: 'Compact', exact: true }).click();
+    await page.locator('.modern-run').first().getByRole('button', { name: 'Compact', exact: true }).click();
     await page.waitForSelector('.modern-swarm-node');
     const run = page.locator('.modern-run').first();
     // Fit once at full size so the animation does not jump between zoom levels.

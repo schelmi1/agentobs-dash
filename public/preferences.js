@@ -17,10 +17,12 @@
       collapsed: ids(saved.collapsed), expandedCompleted: ids(saved.expandedCompleted), shownCompleted: ids(saved.shownCompleted),
       modernWorkspaceArrangement: ['row', 'column', 'grid'].includes(saved.modernWorkspaceArrangement) ? saved.modernWorkspaceArrangement : 'column',
       modernSwarm: saved.modernSwarm === true,
+      modernSwarmRuns: ids(saved.modernSwarmRuns),
       manuallyCompleted: Object.fromEntries(Object.entries(saved.manuallyCompleted && typeof saved.manuallyCompleted === 'object' && !Array.isArray(saved.manuallyCompleted) ? saved.manuallyCompleted : {}).slice(-1000).filter(([id, signature]) => id.length <= 2000 && typeof signature === 'string' && signature.length <= 40)),
       modernHideCompletedRuns: ids(saved.modernHideCompletedRuns),
       modernExpandedCompleted: ids(saved.modernExpandedCompleted),
       modernWorkspaceSizes: Object.fromEntries(Object.entries(saved.modernWorkspaceSizes && typeof saved.modernWorkspaceSizes === 'object' && !Array.isArray(saved.modernWorkspaceSizes) ? saved.modernWorkspaceSizes : {}).slice(-1000).filter(([id, size]) => id.length <= 2000 && size && typeof size === 'object').map(([id, size]) => [agentKey(id), { ...(Number.isFinite(size.span) ? { span: Math.max(3, Math.min(12, Math.round(size.span))) } : {}), ...(Number.isFinite(size.height) ? { height: Math.max(200, Math.min(1400, Math.round(size.height))) } : {}), ...(Number.isFinite(size.toolHeight) ? { toolHeight: Math.max(70, Math.min(1000, Math.round(size.toolHeight))) } : {}) }])),
+      sidebarWidth: Number.isFinite(saved.sidebarWidth) && saved.sidebarWidth >= 190 && saved.sidebarWidth <= 480 ? Math.round(saved.sidebarWidth) : undefined,
       inspectorWidth: Number.isFinite(saved.inspectorWidth) && saved.inspectorWidth >= 220 && saved.inspectorWidth <= 480 ? Math.round(saved.inspectorWidth) : undefined,
       ...root.agentobsThemes.normalizeAppearance(saved) };
   }
